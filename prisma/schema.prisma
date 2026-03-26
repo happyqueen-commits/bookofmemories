@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  AUTHOR
+  MODERATOR
+  ADMIN
+}
+
+enum ModerationStatus {
+  draft
+  pending
+  needs_revision
+  approved
+  rejected
+}
+
+enum SubmissionType {
+  create
+  update
+}
+
+enum EntityType {
+  Person
+  ArchiveMaterial
+  Story
+  ChronicleEvent
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(AUTHOR)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  submissionsAuthored  Submission[] @relation("AuthorSubmissions")
+  submissionsModerated Submission[] @relation("ModeratorSubmissions")
+  persons              Person[]
+  archiveMaterials     ArchiveMaterial[]
+  stories              Story[]
+  chronicleEvents      ChronicleEvent[]
+}
+
+model Person {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  fullName          String
+  firstName         String
+  lastName          String
+  middleName        String?
+  photoUrl          String?
+  shortDescription  String
+  biography         String
+  universityRole    String?
+  department        String?
+  faculty           String?
+  studyOrWorkYears  String?
+  birthDate         DateTime?
+  deathDate         DateTime?
+  relatedPeriodText String?
+  sourceInfo        String?
+  verificationStatus String?
+  moderationStatus  ModerationStatus  @default(draft)
+  submittedById     String?
+  publishedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  submittedBy       User?             @relation(fields: [submittedById], references: [id])
+  archiveMaterials  ArchiveMaterial[]
+  stories           Story[]
+  chronicleEvents   ChronicleEvent[]
+}
+
+model ArchiveMaterial {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  title            String
+  description      String
+  materialType     String
+  fileUrl          String?
+  previewImageUrl  String?
+  eventDate        DateTime?
+  sourceInfo       String?
+  tags             String[]
+  moderationStatus ModerationStatus  @default(draft)
+  submittedById    String?
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  submittedBy      User?             @relation(fields: [submittedById], references: [id])
+  persons          Person[]
+}
+
+model Story {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  title            String
+  storyType        String
+  excerpt          String
+  content          String
+  coverImageUrl    String?
+  mediaUrl         String?
+  sourceInfo       String?
+  moderationStatus ModerationStatus  @default(draft)
+  submittedById    String?
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  submittedBy      User?             @relation(fields: [submittedById], references: [id])
+  persons          Person[]
+}
+
+model ChronicleEvent {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  title            String
+  summary          String
+  content          String
+  eventDate        DateTime
+  coverImageUrl    String?
+  moderationStatus ModerationStatus  @default(draft)
+  submittedById    String?
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  submittedBy      User?             @relation(fields: [submittedById], references: [id])
+  persons          Person[]
+}
+
+model Submission {
+  id               String           @id @default(cuid())
+  submissionType   SubmissionType
+  targetEntityType EntityType
+  targetEntityId   String?
+  payloadJson      Json
+  status           ModerationStatus @default(pending)
+  moderatorComment String?
+  authorId         String
+  moderatorId      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  author           User             @relation("AuthorSubmissions", fields: [authorId], references: [id])
+  moderator        User?            @relation("ModeratorSubmissions", fields: [moderatorId], references: [id])
+}

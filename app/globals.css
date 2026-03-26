@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-paper text-ink;
+}
+
+a {
+  @apply text-accent hover:underline;
+}
+
+.container-arch {
+  @apply mx-auto max-w-6xl px-4;
+}
