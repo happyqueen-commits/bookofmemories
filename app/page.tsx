@@ -16,12 +16,12 @@ export default async function Home() {
 
       <section>
         <h2 className="section-title mb-3">Избранные карточки</h2>
-        <div className="grid gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
+        <div className="grid items-stretch gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
       </section>
 
       <section>
         <h2 className="section-title mb-3">Новые архивные материалы</h2>
-        <div className="grid gap-4 md:grid-cols-2">{latestArchive.map((m) => <Card key={m.id} title={m.title} text={m.description} href={`/archive/${m.slug}`} />)}</div>
+        <div className="grid items-stretch gap-4 md:grid-cols-2">{latestArchive.map((m) => <Card key={m.id} title={m.title} text={m.description} href={`/archive/${m.slug}`} />)}</div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
