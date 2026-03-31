@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
 
 const submitSchema = z.object({
   targetEntityType: z.enum(["Person", "ArchiveMaterial", "Story", "ChronicleEvent"]),
-  title: z.string().min(3),
-  description: z.string().min(10)
+  title: z.string().trim().min(2),
+  description: z.string().trim().min(3)
 });
 
 const moderateSchema = z.object({
@@ -42,7 +42,7 @@ export async function submitMaterialAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    throw new Error("Некорректные данные формы");
+    redirect("/submit?error=invalid_form");
   }
 
   await prisma.submission.create({
