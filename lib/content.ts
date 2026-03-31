@@ -1,6 +1,26 @@
 import { ModerationStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+function buildSearchFilter(search?: string): Prisma.StringFilter | undefined {
+  const query = search?.trim();
+
+  return query ? { contains: query, mode: "insensitive" } : undefined;
+}
+
+export function buildArchiveMaterialsWhere(query?: string, type?: string): Prisma.ArchiveMaterialWhereInput {
+  const searchFilter = buildSearchFilter(query);
+
+  return {
+    moderationStatus: ModerationStatus.approved,
+    ...(searchFilter
+      ? {
+          OR: [{ title: searchFilter }, { description: searchFilter }]
+        }
+      : {}),
+    ...(type ? { materialType: type } : {})
+  };
+}
+
 export async function getHomepageData() {
   const [featuredPersons, latestArchive, latestStories, latestChronicle, stats] = await Promise.all([
     prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { publishedAt: "desc" } }),
@@ -20,13 +40,13 @@ export async function getHomepageData() {
 
 export async function getPublicLists(query?: string) {
   const search = query?.trim();
-  const baseWhere = (field: string): Prisma.StringFilter | undefined => search ? { contains: search, mode: "insensitive" } : undefined;
+  const searchFilter = buildSearchFilter(search);
 
   const [persons, archive, stories, chronicle] = await Promise.all([
-    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: search ? [{ fullName: baseWhere("fullName") }] : undefined }, orderBy: { publishedAt: "desc" } }),
-    prisma.archiveMaterial.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: search ? [{ title: baseWhere("title") }, { description: baseWhere("description") }] : undefined }, orderBy: { publishedAt: "desc" } }),
-    prisma.story.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: search ? [{ title: baseWhere("title") }, { excerpt: baseWhere("excerpt") }] : undefined }, orderBy: { publishedAt: "desc" } }),
-    prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: search ? [{ title: baseWhere("title") }, { summary: baseWhere("summary") }] : undefined }, orderBy: { eventDate: "desc" } })
+    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ fullName: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
+    prisma.archiveMaterial.findMany({ where: buildArchiveMaterialsWhere(search), orderBy: { publishedAt: "desc" } }),
+    prisma.story.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { excerpt: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
+    prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { summary: searchFilter }] : undefined }, orderBy: { eventDate: "desc" } })
   ]);
 
   return { persons, archive, stories, chronicle };
