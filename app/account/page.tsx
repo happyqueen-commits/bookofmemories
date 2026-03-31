@@ -7,15 +7,16 @@ import { prisma } from "@/lib/prisma";
 export default async function AccountPage({
   searchParams
 }: {
-  searchParams?: { error?: string };
+  searchParams?: { error?: string; code?: string };
 }) {
   const session = await auth();
+  const loginError = searchParams?.error === "CredentialsSignin" ? searchParams?.code : searchParams?.error;
 
   if (!session?.user) {
     return (
       <div className="max-w-md">
         <h1 className="mb-4 text-2xl font-semibold">Кабинет автора</h1>
-        <AuthForms loginError={searchParams?.error} />
+        <AuthForms loginError={loginError} />
       </div>
     );
   }
