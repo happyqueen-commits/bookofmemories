@@ -156,3 +156,32 @@ model Submission {
   author           User             @relation("AuthorSubmissions", fields: [authorId], references: [id])
   moderator        User?            @relation("ModeratorSubmissions", fields: [moderatorId], references: [id])
 }
+
+
+model LoginAttempt {
+  key             String   @id
+  email           String
+  ip              String
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  lockedUntil     DateTime?
+  lastAttemptAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([email])
+  @@index([ip])
+  @@index([lockedUntil])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}

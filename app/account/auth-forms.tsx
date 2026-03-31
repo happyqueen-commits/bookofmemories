@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import { useMemo, useState } from "react";
 import { loginAction, registerAction, type RegisterActionState } from "@/lib/actions";
+import { passwordRequirements } from "@/lib/password-policy";
 
 const initialRegisterState: RegisterActionState = {
   status: "idle"
@@ -25,7 +27,9 @@ export function AuthForms({ loginError }: { loginError?: string }) {
   const registerErrors = registerState.errors ?? {};
 
   const loginErrorLabel = useMemo(() => {
+    if (loginError === "empty_fields") return "Заполните email и пароль.";
     if (loginError === "invalid_credentials") return "Неверный email или пароль.";
+    if (loginError === "too_many_attempts") return "Слишком много попыток входа. Попробуйте позже.";
     return "";
   }, [loginError]);
 
@@ -59,6 +63,9 @@ export function AuthForms({ loginError }: { loginError?: string }) {
             Пароль
             <input type="password" name="password" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" required />
           </label>
+          <Link href="/account/forgot-password" className="block text-sm text-slate-600 underline">
+            Забыли пароль?
+          </Link>
           <SubmitButton label="Войти" />
         </form>
       ) : (
@@ -80,6 +87,7 @@ export function AuthForms({ loginError }: { loginError?: string }) {
           <label className="block">
             Пароль
             <input type="password" name="password" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" required />
+            <span className="mt-1 block text-xs text-slate-600">Требования: {passwordRequirements.join(", ")}.</span>
             {registerErrors.password ? <span className="text-sm text-red-700">{registerErrors.password}</span> : null}
           </label>
           <label className="block">

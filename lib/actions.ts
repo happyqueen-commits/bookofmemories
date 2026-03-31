@@ -2,11 +2,15 @@
 
 import { EntityType, ModerationStatus, Role, SubmissionType } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signIn, signOut } from "@/lib/auth";
+import { getClientIpFromHeaders, getLoginRateLimitState } from "@/lib/login-rate-limit";
+import { passwordSchema } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
 
 const optionalTrimmedString = z.preprocess((value) => {
@@ -103,7 +107,7 @@ const registerSchema = z
   .object({
     name: z.string().trim().min(2, "Имя должно содержать минимум 2 символа."),
     email: z.string().trim().email("Введите корректный email."),
-    password: z.string().min(6, "Пароль должен содержать минимум 6 символов."),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Подтвердите пароль.")
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -123,15 +127,61 @@ export type RegisterActionState = {
   successMessage?: string;
 };
 
+export type ForgotPasswordActionState = {
+  status: "idle" | "error" | "success";
+  error?: string;
+  message?: string;
+};
+
+export type ResetPasswordActionState = {
+  status: "idle" | "error" | "success";
+  error?: string;
+  message?: string;
+};
+
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Введите корректный email.")
+});
+
+const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(1, "Токен сброса не найден."),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Подтвердите пароль.")
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Пароли не совпадают.",
+    path: ["confirmPassword"]
+  });
+
 export async function loginAction(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const requestHeaders = headers();
+  const ip = getClientIpFromHeaders(requestHeaders);
+
+  if (!email || !password) {
+    redirect("/account?error=empty_fields");
+  }
+
+  const rateLimit = await getLoginRateLimitState(email, ip);
+  if (rateLimit.locked) {
+    redirect("/account?error=too_many_attempts");
+  }
+
   try {
     await signIn("credentials", {
-      email: String(formData.get("email") ?? ""),
-      password: String(formData.get("password") ?? ""),
+      email,
+      password,
+      ip,
       redirectTo: "/account"
     });
   } catch (error) {
     if (error instanceof AuthError && error.type === "CredentialsSignin") {
+      const updatedRateLimit = await getLoginRateLimitState(email, ip);
+      if (updatedRateLimit.locked) {
+        redirect("/account?error=too_many_attempts");
+      }
       redirect("/account?error=invalid_credentials");
     }
     throw error;
@@ -193,6 +243,79 @@ export async function registerAction(
     status: "success",
     successMessage: "Регистрация прошла успешно. Войдите в аккаунт."
   };
+}
+
+export async function forgotPasswordAction(
+  _: ForgotPasswordActionState,
+  formData: FormData
+): Promise<ForgotPasswordActionState> {
+  const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
+
+  if (!parsed.success) {
+    return { status: "error", error: parsed.error.flatten().fieldErrors.email?.[0] ?? "Некорректный email." };
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (user) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    await prisma.passwordResetToken.create({
+      data: {
+        email,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      }
+    });
+
+    return {
+      status: "success",
+      message: `Инструкция отправлена. Тестовый токен (для dev): ${rawToken}`
+    };
+  }
+
+  return {
+    status: "success",
+    message: "Если такой email зарегистрирован, инструкция по сбросу уже отправлена."
+  };
+}
+
+export async function resetPasswordAction(
+  _: ResetPasswordActionState,
+  formData: FormData
+): Promise<ResetPasswordActionState> {
+  const parsed = resetPasswordSchema.safeParse({
+    token: formData.get("token"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword")
+  });
+
+  if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors;
+    return {
+      status: "error",
+      error: fields.password?.[0] ?? fields.confirmPassword?.[0] ?? fields.token?.[0] ?? "Проверьте форму."
+    };
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
+  const now = new Date();
+  const token = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+
+  if (!token || token.usedAt || token.expiresAt <= now) {
+    return { status: "error", error: "Ссылка недействительна или истекла." };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { email: token.email }, data: { passwordHash } }),
+    prisma.passwordResetToken.update({ where: { tokenHash }, data: { usedAt: now } })
+  ]);
+
+  return { status: "success", message: "Пароль обновлен. Теперь войдите с новым паролем." };
 }
 
 export async function logoutAction() {
