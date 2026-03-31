@@ -52,10 +52,18 @@ npm run dev
 - `/api/auth/[...nextauth]`
 
 ## Модерация
-- Автор создает заявку на `/submit`.
+- Автор создает типизированную заявку на `/submit` с `targetEntityType`: `Person`, `ArchiveMaterial`, `Story`, `ChronicleEvent`.
+- Каждая заявка валидируется как discriminated union по `targetEntityType` (разные обязательные поля для каждого типа).
+- В `Submission.payloadJson` сохраняется полный структурированный payload заявки без потери полей.
 - Заявка попадает в `Submission` со статусом `pending`.
 - Модератор/админ на `/admin` переводит в `approved`, `needs_revision` или `rejected`.
-- При `approved` материал публикуется в соответствующей сущности и появляется в публичных разделах.
+- При `approved` публикация использует реальные данные из `payloadJson` (fallback применяется только для безопасных технических полей, например slug/частей ФИО при разборе).
+
+Формат payload по типам:
+- `Person`: `fullName`, `biography`, `shortDescription?`, `birthDate?`, `deathDate?`, `faculty?`, `department?`.
+- `ArchiveMaterial`: `title`, `description`, `materialType`, `sourceInfo`, `eventDate?`, `tags[]`, `fileUrl?`, `previewImageUrl?` (требуется минимум одно из двух URL-полей).
+- `Story`: `title`, `storyType`, `excerpt`, `content`, `sourceInfo?`.
+- `ChronicleEvent`: `title`, `summary`, `content`, `eventDate`, `coverImageUrl?`.
 
 ## Поиск и фильтрация
 - Поиск реализован в публичных разделах через query параметр `q`.
@@ -69,6 +77,9 @@ npm run dev
 - `Story`
 - `ChronicleEvent`
 - `Submission`
+
+`Submission` хранит универсальные поля (`submissionType`, `targetEntityType`, `status`, `moderatorComment`, связи с автором/модератором) и `payloadJson` с типизированным JSON по `targetEntityType`.
+Это позволяет принимать расширенные заявки на создание сущностей и публиковать их без «схлопывания» данных до `title/description`.
 
 Связи many-to-many:
 - `Person ↔ ArchiveMaterial`
