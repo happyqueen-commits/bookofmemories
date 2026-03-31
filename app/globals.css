@@ -163,3 +163,18 @@ a {
     color: rgb(71 85 105);
   }
 }
+
+@layer utilities {
+  .auth-screen-center {
+    min-height: calc(100vh - 9rem);
+    @apply flex items-center justify-center;
+  }
+
+  .modal-overlay {
+    @apply w-full rounded-2xl bg-slate-950/35;
+  }
+
+  .modal-surface {
+    @apply mx-auto rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xl sm:p-6;
+  }
+}

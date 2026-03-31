@@ -3,6 +3,7 @@ import { logoutAction } from "@/lib/actions";
 import { AuthForms } from "@/app/account/auth-forms";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { AuthCard } from "@/components/auth-card";
 
 export default async function AccountPage({
   searchParams
@@ -14,10 +15,11 @@ export default async function AccountPage({
 
   if (!session?.user) {
     return (
-      <div className="max-w-md">
-        <h1 className="mb-4 text-2xl font-semibold">Кабинет автора</h1>
-        <AuthForms loginError={loginError} />
-      </div>
+      <section className="auth-screen-center">
+        <AuthCard title="Кабинет автора" closeHref="/">
+          <AuthForms loginError={loginError} />
+        </AuthCard>
+      </section>
     );
   }
 
