@@ -18,17 +18,17 @@ export default async function Home() {
         <div className="mt-4"><SearchForm placeholder="Искать по всем разделам" /></div>
       </section>
 
-      <section className="rounded border border-slate-200 bg-tint-lavender p-section-pad">
+      <section className="section-reveal rounded border border-slate-200 bg-tint-lavender p-section-pad">
         <h2 className="section-title mb-3">Избранные карточки</h2>
         <div className="grid items-stretch gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
       </section>
 
-      <section className="rounded border border-slate-300 bg-white p-section-pad">
+      <section className="section-reveal reveal-delay-1 rounded border border-slate-300 bg-white p-section-pad">
         <h2 className="section-title mb-3">Новые архивные материалы</h2>
         <div className="grid items-stretch gap-4 md:grid-cols-2">{latestArchive.map((m) => <Card key={m.id} title={m.title} text={m.description} href={`/archive/${m.slug}`} />)}</div>
       </section>
 
-      <section className="grid gap-4 rounded border border-slate-200 bg-tint-sky p-section-pad md:grid-cols-2">
+      <section className="section-reveal reveal-delay-2 grid gap-4 rounded border border-slate-200 bg-tint-sky p-section-pad md:grid-cols-2">
         <div>
           <h2 className="section-title mb-3">Интервью и воспоминания</h2>
           <div className="space-y-3">{latestStories.map((s) => <Card key={s.id} title={s.title} text={s.excerpt} href={`/stories/${s.slug}`} />)}</div>
@@ -39,7 +39,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="rounded border border-slate-300 bg-white p-section-pad">
+      <section className="section-reveal reveal-delay-3 rounded border border-slate-300 bg-white p-section-pad">
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
           <div className="rounded-lg border border-slate-200 bg-tint-lavender p-4">
             <p className="text-3xl font-bold leading-none text-accent">{stats[0]}</p>
@@ -60,10 +60,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="rounded border border-slate-200 bg-tint-sky p-section-pad">
+      <section className="section-reveal reveal-delay-4 rounded border border-slate-200 bg-tint-sky p-section-pad">
         <h2 className="subsection-title">Как работает модерация</h2>
         <p className="mt-2 text-slate-700">Каждый материал проходит проверку модератором: pending → needs_revision / approved / rejected. Публикация происходит только после статуса approved.</p>
-        <Link className="mt-3 inline-block" href="/submit">Подать материал</Link>
+        <Link className="interactive-lift mt-3 inline-block rounded px-1 py-0.5 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2" href="/submit">Подать материал</Link>
       </section>
     </div>
   );
