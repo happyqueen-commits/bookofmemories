@@ -13,6 +13,12 @@ const submitSchema = z.object({
   description: z.string().min(10)
 });
 
+const moderateSchema = z.object({
+  submissionId: z.string().cuid(),
+  status: z.enum(["approved", "needs_revision", "rejected"]),
+  moderatorComment: z.string().max(2000).optional().or(z.literal(""))
+});
+
 export async function loginAction(formData: FormData) {
   await signIn("credentials", {
     email: String(formData.get("email") ?? ""),
@@ -55,13 +61,35 @@ export async function submitMaterialAction(formData: FormData) {
 
 export async function moderateSubmissionAction(formData: FormData) {
   const session = await auth();
-  if (!session?.user || ![Role.MODERATOR, Role.ADMIN].includes(session.user.role)) {
+  if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
     throw new Error("Недостаточно прав");
   }
 
-  const submissionId = String(formData.get("submissionId"));
-  const status = formData.get("status") as ModerationStatus;
-  const moderatorComment = String(formData.get("moderatorComment") ?? "");
+  const rawModerationInput = {
+    submissionId: String(formData.get("submissionId") ?? ""),
+    status: String(formData.get("status") ?? ""),
+    moderatorComment: String(formData.get("moderatorComment") ?? "")
+  };
+
+  const parsed = moderateSchema.safeParse(rawModerationInput);
+  if (!parsed.success) {
+    throw new Error("Не удалось обработать форму модерации. Проверьте заполненные поля.");
+  }
+
+  const { submissionId, status, moderatorComment } = parsed.data;
+
+  const existingSubmission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    select: { status: true }
+  });
+
+  if (!existingSubmission) {
+    throw new Error("Заявка не найдена.");
+  }
+
+  if (existingSubmission.status === ModerationStatus.approved && status === ModerationStatus.approved) {
+    throw new Error("Эта заявка уже одобрена.");
+  }
 
   const submission = await prisma.submission.update({
     where: { id: submissionId },

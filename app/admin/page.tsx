@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
   const session = await auth();
-  if (!session?.user || ![Role.MODERATOR, Role.ADMIN].includes(session.user.role)) {
+  if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
     return <div><h1 className="text-2xl font-semibold">Админ-панель</h1><p className="mt-2">Доступ только для MODERATOR/ADMIN.</p></div>;
   }
 
