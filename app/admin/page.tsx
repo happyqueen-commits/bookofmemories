@@ -9,7 +9,7 @@ export default async function AdminPage() {
     return <div><h1 className="text-2xl font-semibold">Админ-панель</h1><p className="mt-2">Доступ только для MODERATOR/ADMIN.</p></div>;
   }
 
-  const submissions = await prisma.submission.findMany({ where: { status: { in: ["pending", "needs_revision"] } }, include: { author: true }, orderBy: { createdAt: "desc" } });
+  const submissions = await prisma.submission.findMany({ where: { status: { in: ["pending", "needs_revision", "approved"] } }, include: { author: true }, orderBy: { createdAt: "desc" } });
 
   return (
     <div>
@@ -18,7 +18,10 @@ export default async function AdminPage() {
         {submissions.map((s) => (
           <article key={s.id} className="rounded border border-slate-300 bg-white p-4">
             <p className="text-sm text-slate-600">Автор: {s.author.name} ({s.author.email})</p>
-            <p className="font-medium">{s.targetEntityType}</p>
+            <p className="font-medium">
+              {s.targetEntityType}
+              {s.targetEntityId ? <span className="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">уже опубликовано</span> : null}
+            </p>
             <pre className="mt-2 overflow-auto rounded bg-slate-100 p-2 text-xs">{JSON.stringify(s.payloadJson, null, 2)}</pre>
             <form action={moderateSubmissionAction} className="mt-3 grid gap-2 sm:grid-cols-4">
               <input type="hidden" name="submissionId" value={s.id} />

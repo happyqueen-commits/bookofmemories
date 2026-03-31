@@ -80,23 +80,23 @@ export async function moderateSubmissionAction(formData: FormData) {
 
   const existingSubmission = await prisma.submission.findUnique({
     where: { id: submissionId },
-    select: { status: true }
+    select: { id: true }
   });
 
   if (!existingSubmission) {
     throw new Error("Заявка не найдена.");
   }
 
-  if (existingSubmission.status === ModerationStatus.approved && status === ModerationStatus.approved) {
-    throw new Error("Эта заявка уже одобрена.");
-  }
+  await prisma.$transaction(async (tx) => {
+    const submission = await tx.submission.update({
+      where: { id: submissionId },
+      data: { status, moderatorComment, moderatorId: session.user.id }
+    });
 
-  const submission = await prisma.submission.update({
-    where: { id: submissionId },
-    data: { status, moderatorComment, moderatorId: session.user.id }
-  });
+    if (status !== ModerationStatus.approved || submission.targetEntityId) {
+      return;
+    }
 
-  if (status === ModerationStatus.approved) {
     const payload = submission.payloadJson as { title?: string; description?: string };
     const slug = (payload.title ?? "material").toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-|-$/g, "");
     const dataCommon = {
@@ -105,8 +105,10 @@ export async function moderateSubmissionAction(formData: FormData) {
       submittedById: submission.authorId
     };
 
+    let createdEntityId: string | undefined;
+
     if (submission.targetEntityType === EntityType.Person) {
-      await prisma.person.create({
+      const createdPerson = await tx.person.create({
         data: {
           ...dataCommon,
           slug: `${slug}-${Date.now()}`,
@@ -117,10 +119,12 @@ export async function moderateSubmissionAction(formData: FormData) {
           biography: payload.description ?? ""
         }
       });
+
+      createdEntityId = createdPerson.id;
     }
 
     if (submission.targetEntityType === EntityType.ArchiveMaterial) {
-      await prisma.archiveMaterial.create({
+      const createdArchiveMaterial = await tx.archiveMaterial.create({
         data: {
           ...dataCommon,
           slug: `${slug}-${Date.now()}`,
@@ -130,10 +134,12 @@ export async function moderateSubmissionAction(formData: FormData) {
           tags: ["память"]
         }
       });
+
+      createdEntityId = createdArchiveMaterial.id;
     }
 
     if (submission.targetEntityType === EntityType.Story) {
-      await prisma.story.create({
+      const createdStory = await tx.story.create({
         data: {
           ...dataCommon,
           slug: `${slug}-${Date.now()}`,
@@ -143,10 +149,12 @@ export async function moderateSubmissionAction(formData: FormData) {
           content: payload.description ?? ""
         }
       });
+
+      createdEntityId = createdStory.id;
     }
 
     if (submission.targetEntityType === EntityType.ChronicleEvent) {
-      await prisma.chronicleEvent.create({
+      const createdChronicleEvent = await tx.chronicleEvent.create({
         data: {
           ...dataCommon,
           slug: `${slug}-${Date.now()}`,
@@ -156,8 +164,17 @@ export async function moderateSubmissionAction(formData: FormData) {
           eventDate: new Date()
         }
       });
+
+      createdEntityId = createdChronicleEvent.id;
     }
-  }
+
+    if (createdEntityId) {
+      await tx.submission.update({
+        where: { id: submission.id },
+        data: { targetEntityId: createdEntityId }
+      });
+    }
+  });
 
   revalidatePath("/admin");
   revalidatePath("/memory");
