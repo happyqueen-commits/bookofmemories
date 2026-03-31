@@ -1,6 +1,8 @@
 "use server";
 
 import { EntityType, ModerationStatus, Role, SubmissionType } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -97,12 +99,100 @@ const moderateSchema = z.object({
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
 
+const registerSchema = z
+  .object({
+    name: z.string().trim().min(2, "Имя должно содержать минимум 2 символа."),
+    email: z.string().trim().email("Введите корректный email."),
+    password: z.string().min(6, "Пароль должен содержать минимум 6 символов."),
+    confirmPassword: z.string().min(1, "Подтвердите пароль.")
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Пароли не совпадают.",
+    path: ["confirmPassword"]
+  });
+
+export type RegisterActionState = {
+  status: "idle" | "error" | "success";
+  errors?: {
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  };
+  formError?: string;
+  successMessage?: string;
+};
+
 export async function loginAction(formData: FormData) {
+  try {
+    await signIn("credentials", {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      redirectTo: "/account"
+    });
+  } catch (error) {
+    if (error instanceof AuthError && error.type === "CredentialsSignin") {
+      redirect("/account?error=invalid_credentials");
+    }
+    throw error;
+  }
+}
+
+export async function registerAction(
+  _: RegisterActionState,
+  formData: FormData
+): Promise<RegisterActionState> {
+  const parsed = registerSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword")
+  });
+
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    return {
+      status: "error",
+      errors: {
+        name: fieldErrors.name?.[0],
+        email: fieldErrors.email?.[0],
+        password: fieldErrors.password?.[0],
+        confirmPassword: fieldErrors.confirmPassword?.[0]
+      },
+      formError: "Проверьте корректность заполнения формы."
+    };
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    return {
+      status: "error",
+      errors: { email: "Пользователь с таким email уже существует." },
+      formError: "Email уже занят."
+    };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  await prisma.user.create({
+    data: {
+      name: parsed.data.name,
+      email,
+      passwordHash,
+      role: Role.AUTHOR
+    }
+  });
+
   await signIn("credentials", {
-    email: String(formData.get("email") ?? ""),
-    password: String(formData.get("password") ?? ""),
+    email,
+    password: parsed.data.password,
     redirectTo: "/account"
   });
+
+  return {
+    status: "success",
+    successMessage: "Регистрация прошла успешно. Войдите в аккаунт."
+  };
 }
 
 export async function logoutAction() {
