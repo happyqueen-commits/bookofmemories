@@ -171,10 +171,10 @@ a {
   }
 
   .modal-overlay {
-    @apply w-full rounded-2xl bg-slate-950/35;
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55;
   }
 
   .modal-surface {
-    @apply mx-auto rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xl sm:p-6;
+    @apply relative z-10 w-full max-w-md rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xl sm:p-6;
   }
 }

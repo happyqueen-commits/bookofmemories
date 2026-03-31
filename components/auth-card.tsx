@@ -70,8 +70,8 @@ export function AuthCard({ title, children, closeHref }: AuthCardProps) {
   }, [closeHref, router]);
 
   return (
-    <div className="modal-overlay p-4 sm:p-6">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="modal-surface w-full max-w-md">
+    <div className="modal-overlay">
+       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="modal-surface">
         <div className="mb-4 flex items-start justify-between gap-3">
           <h1 id={titleId} className="text-2xl font-semibold">
             {title}
