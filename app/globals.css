@@ -34,7 +34,7 @@ body {
 }
 
 a {
-  @apply text-accent hover:underline;
+  @apply text-accent no-underline hover:no-underline;
 }
 
 .container-arch {
