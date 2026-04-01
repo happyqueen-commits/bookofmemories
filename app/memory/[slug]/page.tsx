@@ -24,9 +24,9 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
   if (!person) notFound();
 
   return (
-    <article className="space-y-3">
+    <article className="space-y-3 break-words">
       <h1 className="text-3xl font-semibold">{person.fullName}</h1>
-      <p>{person.biography}</p>
+      <p className="[overflow-wrap:anywhere]">{person.biography}</p>
     </article>
   );
 }
