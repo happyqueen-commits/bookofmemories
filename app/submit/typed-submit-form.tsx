@@ -1,16 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { EntityType } from "@prisma/client";
 import { submitMaterialAction } from "@/lib/actions";
-
-type EntityType = "Person" | "ArchiveMaterial" | "Story" | "ChronicleEvent";
-
-const entityOptions: { value: EntityType; label: string }[] = [
-  { value: "Person", label: "Person" },
-  { value: "ArchiveMaterial", label: "ArchiveMaterial" },
-  { value: "Story", label: "Story" },
-  { value: "ChronicleEvent", label: "ChronicleEvent" }
-];
+import { ENTITY_TYPE_OPTIONS } from "@/lib/entity-labels";
 
 const baseInputClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
 
@@ -27,14 +20,14 @@ export function TypedSubmitForm() {
   return (
     <form action={submitMaterialAction} className="space-y-4 rounded border border-slate-300 bg-white p-4">
       <label className="block">
-        Тип сущности
+        Что вы хотите добавить
         <select
           name="targetEntityType"
           value={entityType}
           onChange={(event) => setEntityType(event.target.value as EntityType)}
           className={baseInputClass}
         >
-          {entityOptions.map((option) => (
+          {ENTITY_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
