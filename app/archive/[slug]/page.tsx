@@ -22,9 +22,9 @@ export default async function ArchiveItemPage({ params }: { params: Promise<{ sl
   if (!item) notFound();
 
   return (
-    <article className="space-y-3">
+    <article className="space-y-3 break-words">
       <h1 className="text-3xl font-semibold">{item.title}</h1>
-      <p>{item.description}</p>
+      <p className="[overflow-wrap:anywhere]">{item.description}</p>
       <p className="text-sm text-slate-600">Источник: {item.sourceInfo}</p>
       {item.fileUrl && (
         <a className="text-blue-700 underline" href={item.fileUrl}>
