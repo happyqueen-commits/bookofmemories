@@ -37,6 +37,27 @@ function getLoginAttemptDelegate() {
   return delegate ?? null;
 }
 
+function isMissingLoginAttemptTableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? (error as { code?: string }).code : undefined;
+  const message = "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+  return code === "P2021" || message.includes("LoginAttempt");
+}
+
+async function runRateLimitQuery<T>(query: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await query();
+  } catch (error) {
+    if (isMissingLoginAttemptTableError(error)) {
+      return fallback;
+    }
+    throw error;
+  }
+}
+
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -57,7 +78,7 @@ export async function getLoginRateLimitState(email: string, ip: string) {
 
   const key = getRateLimitKey(email, ip);
   const now = new Date();
-  const attempt = await loginAttempt.findUnique({ where: { key } });
+  const attempt = await runRateLimitQuery(() => loginAttempt.findUnique({ where: { key } }), null);
 
   if (!attempt) {
     return { locked: false as const, remainingMs: 0, attemptsLeft: RATE_LIMIT_MAX_ATTEMPTS };
@@ -93,24 +114,28 @@ export async function recordFailedLoginAttempt(email: string, ip: string) {
   const key = getRateLimitKey(normalizedEmail, normalizedIp);
   const now = new Date();
 
-  const current = await loginAttempt.findUnique({ where: { key } });
+  const current = await runRateLimitQuery(() => loginAttempt.findUnique({ where: { key } }), null);
 
   if (!current) {
-    await loginAttempt.create({
-      data: {
-        key,
-        email: normalizedEmail,
-        ip: normalizedIp,
-        attempts: 1,
-        windowStartedAt: now,
-        lastAttemptAt: now
-      }
-    });
+    await runRateLimitQuery(
+      () =>
+        loginAttempt.create({
+          data: {
+            key,
+            email: normalizedEmail,
+            ip: normalizedIp,
+            attempts: 1,
+            windowStartedAt: now,
+            lastAttemptAt: now
+          }
+        }),
+      null
+    );
     return;
   }
 
   if (current.lockedUntil && current.lockedUntil > now) {
-    await loginAttempt.update({ where: { key }, data: { lastAttemptAt: now } });
+    await runRateLimitQuery(() => loginAttempt.update({ where: { key }, data: { lastAttemptAt: now } }), null);
     return;
   }
 
@@ -118,15 +143,19 @@ export async function recordFailedLoginAttempt(email: string, ip: string) {
   const nextAttempts = inCurrentWindow ? current.attempts + 1 : 1;
   const shouldLock = nextAttempts >= RATE_LIMIT_MAX_ATTEMPTS;
 
-  await loginAttempt.update({
-    where: { key },
-    data: {
-      attempts: nextAttempts,
-      windowStartedAt: inCurrentWindow ? current.windowStartedAt : now,
-      lastAttemptAt: now,
-      lockedUntil: shouldLock ? new Date(now.getTime() + RATE_LIMIT_LOCK_MS) : null
-    }
-  });
+  await runRateLimitQuery(
+    () =>
+      loginAttempt.update({
+        where: { key },
+        data: {
+          attempts: nextAttempts,
+          windowStartedAt: inCurrentWindow ? current.windowStartedAt : now,
+          lastAttemptAt: now,
+          lockedUntil: shouldLock ? new Date(now.getTime() + RATE_LIMIT_LOCK_MS) : null
+        }
+      }),
+    null
+  );
 }
 
 export async function clearLoginRateLimit(email: string, ip: string) {
@@ -136,7 +165,7 @@ export async function clearLoginRateLimit(email: string, ip: string) {
   }
 
   const key = getRateLimitKey(email, ip);
-  await loginAttempt.deleteMany({ where: { key } });
+  await runRateLimitQuery(() => loginAttempt.deleteMany({ where: { key } }), null);
 }
 
 export function getClientIpFromHeaders(source: Headers) {
