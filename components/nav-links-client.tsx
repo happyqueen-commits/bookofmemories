@@ -8,7 +8,6 @@ type NavLink = readonly [href: string, label: string];
 
 type NavLinksClientProps = {
   publicLinks: readonly NavLink[];
-  isAuthenticated: boolean;
   isAdmin: boolean;
 };
 
@@ -30,16 +29,13 @@ function getLinkClasses(active: boolean) {
   ].join(" ");
 }
 
-export function NavLinksClient({ publicLinks, isAuthenticated, isAdmin }: NavLinksClientProps) {
+export function NavLinksClient({ publicLinks, isAdmin }: NavLinksClientProps) {
   const pathname = usePathname() || "/";
   const [isOpen, setIsOpen] = useState(false);
 
-  const accountLabel = isAuthenticated ? "Кабинет" : "Войти";
-
   const links = [
     ...publicLinks,
-    ["/account", accountLabel] as const,
-    ...(isAdmin ? ([["/admin", "Админ"]] as const) : [])
+    ...(isAdmin ? ([["/admin", "Админ"], ["/account", "Кабинет"]] as const) : [])
   ];
 
   return (

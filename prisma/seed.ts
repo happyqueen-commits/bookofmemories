@@ -80,6 +80,8 @@ async function main() {
     data: {
       submissionType: "create",
       targetEntityType: "Story",
+      contactName: author.name,
+      contactEmail: author.email,
       payloadJson: { title: "Черновик материала", description: "Нужна доработка доказательной базы" },
       status: ModerationStatus.needs_revision,
       authorId: author.id,

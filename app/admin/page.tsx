@@ -18,7 +18,8 @@ export default async function AdminPage() {
       <div className="space-y-4">
         {submissions.map((s) => (
           <article key={s.id} className="rounded border border-slate-300 bg-white p-4">
-            <p className="text-sm text-slate-600">Автор: {s.author.name} ({s.author.email})</p>
+            <p className="text-sm text-slate-600">Контакт автора: {s.contactName} ({s.contactEmail})</p>
+            {s.author ? <p className="text-xs text-slate-500">Связанная учетная запись: {s.author.name} ({s.author.email})</p> : null}
             <p className="font-medium">
               {getEntityTypeLabel(s.targetEntityType)}
               {s.targetEntityId ? <span className="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">уже опубликовано</span> : null}

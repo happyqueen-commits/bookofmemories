@@ -148,13 +148,17 @@ model Submission {
   payloadJson      Json
   status           ModerationStatus @default(pending)
   moderatorComment String?
-  authorId         String
+  contactName      String
+  contactEmail     String
+  authorId         String?
   moderatorId      String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  author           User             @relation("AuthorSubmissions", fields: [authorId], references: [id])
+  author           User?            @relation("AuthorSubmissions", fields: [authorId], references: [id])
   moderator        User?            @relation("ModeratorSubmissions", fields: [moderatorId], references: [id])
+
+  @@index([contactEmail])
 }
 
 

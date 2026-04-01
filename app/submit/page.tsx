@@ -1,19 +1,15 @@
-import { auth } from "@/lib/auth";
+import Link from "next/link";
 import { TypedSubmitForm } from "./typed-submit-form";
 
 type SubmitPageProps = {
-  searchParams?: Promise<{ error?: string; success?: string }>;
+  searchParams?: Promise<{ error?: string; success?: string; contactEmail?: string }>;
 };
 
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
-  const session = await auth();
   const params = (await searchParams) ?? {};
   const hasValidationError = params.error === "invalid_form";
   const hasSubmittedSuccess = params.success === "submitted";
-
-  if (!session?.user) {
-    return <div><h1 className="text-2xl font-semibold">Добавить материал</h1><p className="mt-2">Чтобы отправить заявку, войдите в кабинет автора.</p></div>;
-  }
+  const submittedEmail = params.contactEmail;
 
   return (
     <div>
@@ -24,9 +20,15 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
         </p>
       )}
       {hasSubmittedSuccess && (
-        <p className="mb-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Материал отправлен на модерацию. После проверки он появится в соответствующем разделе.
-        </p>
+        <div className="mb-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p>Материал отправлен на модерацию. После проверки он появится в соответствующем разделе.</p>
+          <p className="mt-1">
+            Проверить статус можно на странице {" "}
+            <Link href={submittedEmail ? `/submission-status?email=${encodeURIComponent(submittedEmail)}` : "/submission-status"} className="underline">
+              статуса заявок
+            </Link>.
+          </p>
+        </div>
       )}
       <TypedSubmitForm />
     </div>

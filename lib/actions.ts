@@ -68,23 +68,16 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
   chronicleEventSchema
 ]);
 
+const submitContactSchema = z.object({
+  contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
+  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
+});
+
 const moderateSchema = z.object({
   submissionId: z.string().cuid(),
   status: z.enum(["approved", "needs_revision", "rejected"]),
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
-
-const registerSchema = z
-  .object({
-    name: z.string().trim().min(2, "Имя должно содержать минимум 2 символа."),
-    email: z.string().trim().email("Введите корректный email."),
-    password: passwordSchema,
-    confirmPassword: z.string().min(1, "Подтвердите пароль.")
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Пароли не совпадают.",
-    path: ["confirmPassword"]
-  });
 
 export type RegisterActionState = {
   status: "idle" | "error" | "success";
@@ -161,58 +154,11 @@ export async function loginAction(formData: FormData) {
 
 export async function registerAction(
   _: RegisterActionState,
-  formData: FormData
+  _formData: FormData
 ): Promise<RegisterActionState> {
-  const parsed = registerSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-    password: formData.get("password"),
-    confirmPassword: formData.get("confirmPassword")
-  });
-
-  if (!parsed.success) {
-    const fieldErrors = parsed.error.flatten().fieldErrors;
-    return {
-      status: "error",
-      errors: {
-        name: fieldErrors.name?.[0],
-        email: fieldErrors.email?.[0],
-        password: fieldErrors.password?.[0],
-        confirmPassword: fieldErrors.confirmPassword?.[0]
-      },
-      formError: "Проверьте корректность заполнения формы."
-    };
-  }
-
-  const email = parsed.data.email.toLowerCase();
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    return {
-      status: "error",
-      errors: { email: "Пользователь с таким email уже существует." },
-      formError: "Email уже занят."
-    };
-  }
-
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  await prisma.user.create({
-    data: {
-      name: parsed.data.name,
-      email,
-      passwordHash,
-      role: Role.AUTHOR
-    }
-  });
-
-  await signIn("credentials", {
-    email,
-    password: parsed.data.password,
-    redirectTo: "/account"
-  });
-
   return {
-    status: "success",
-    successMessage: "Регистрация прошла успешно. Войдите в аккаунт."
+    status: "error",
+    formError: "Самостоятельная регистрация отключена. Доступ выдают администраторы проекта."
   };
 }
 
@@ -294,9 +240,10 @@ export async function logoutAction() {
 }
 
 export async function submitMaterialAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/account");
-
+  const contactParsed = submitContactSchema.safeParse({
+    contactName: formData.get("contactName"),
+    contactEmail: formData.get("contactEmail")
+  });
   const parsed = submitSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
     fullName: formData.get("fullName"),
@@ -320,8 +267,13 @@ export async function submitMaterialAction(formData: FormData) {
     coverImageUrl: formData.get("coverImageUrl")
   });
 
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
+  if (!parsed.success || !contactParsed.success) {
+    const issue = !contactParsed.success
+      ? contactParsed.error.issues[0]
+      : !parsed.success
+        ? parsed.error.issues[0]
+        : undefined;
+    const firstIssue = issue;
     const field = typeof firstIssue?.path?.[0] === "string" ? firstIssue.path[0] : "form";
     const message = firstIssue?.message ?? "Проверьте форму.";
     const params = new URLSearchParams({
@@ -334,7 +286,9 @@ export async function submitMaterialAction(formData: FormData) {
 
   await prisma.submission.create({
     data: {
-      authorId: session.user.id,
+      authorId: null,
+      contactName: contactParsed.data.contactName,
+      contactEmail: contactParsed.data.contactEmail.toLowerCase(),
       payloadJson: parsed.data,
       submissionType: SubmissionType.create,
       targetEntityType: parsed.data.targetEntityType as EntityType,
@@ -342,10 +296,14 @@ export async function submitMaterialAction(formData: FormData) {
     }
   });
 
-  revalidatePath("/account");
+  revalidatePath("/submission-status");
   revalidatePath("/admin");
 
-  redirect("/submit?success=submitted");
+  const successParams = new URLSearchParams({
+    success: "submitted",
+    contactEmail: contactParsed.data.contactEmail.toLowerCase()
+  });
+  redirect(`/submit?${successParams.toString()}`);
 }
 
 export async function moderateSubmissionAction(formData: FormData) {
