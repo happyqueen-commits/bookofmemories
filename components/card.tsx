@@ -4,10 +4,10 @@ export function Card({ title, text, href }: { title: string; text: string; href:
   return (
     <Link
       href={href}
-      className="interactive-lift motion-slide-in group block h-full rounded-xl border border-patriot-blue/15 bg-white/95 p-4 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-patriot-blue/50 focus-visible:ring-offset-2"
+      className="interactive-lift motion-slide-in group block h-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
     >
       <article className="flex h-full flex-col">
-        <h3 className="card-title mb-2 break-words text-slate-900 group-hover:text-patriot-blue">{title}</h3>
+        <h3 className="card-title mb-2 break-words text-slate-900">{title}</h3>
         <p className="body-muted flex-1 [overflow-wrap:anywhere]">{text}</p>
       </article>
     </Link>

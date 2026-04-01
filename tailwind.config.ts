@@ -5,18 +5,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#13233a",
-        paper: "#f2f6ff",
-        accent: "#1f4fa3",
-        patriot: {
-          blue: "#1d4f9c",
-          red: "#c4343a",
-          white: "#ffffff"
-        },
+        ink: "#1f2937",
+        paper: "#f8f6f2",
+        accent: "#334155",
         tint: {
-          lavender: "#f3f6ff",
-          sky: "#eef5ff",
-          rose: "#fff1f3"
+          lavender: "#f8f9ff",
+          sky: "#f5f9ff"
         }
       },
       spacing: {
