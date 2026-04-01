@@ -19,7 +19,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
       <h1 className="mb-4 text-2xl font-semibold">Добавить материал</h1>
       {hasValidationError && (
         <p className="mb-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          Проверьте форму: обязательные поля зависят от выбранного типа сущности.
+          Проверьте форму: обязательные поля зависят от выбранного раздела.
         </p>
       )}
       <TypedSubmitForm />

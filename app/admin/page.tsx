@@ -1,6 +1,7 @@
 import { Role } from "@prisma/client";
 import { moderateSubmissionAction } from "@/lib/actions";
 import { auth } from "@/lib/auth";
+import { getEntityTypeLabel } from "@/lib/entity-labels";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
@@ -19,7 +20,7 @@ export default async function AdminPage() {
           <article key={s.id} className="rounded border border-slate-300 bg-white p-4">
             <p className="text-sm text-slate-600">Автор: {s.author.name} ({s.author.email})</p>
             <p className="font-medium">
-              {s.targetEntityType}
+              {getEntityTypeLabel(s.targetEntityType)}
               {s.targetEntityId ? <span className="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">уже опубликовано</span> : null}
             </p>
             <pre className="mt-2 overflow-auto rounded bg-slate-100 p-2 text-xs">{JSON.stringify(s.payloadJson, null, 2)}</pre>

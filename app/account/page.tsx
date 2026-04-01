@@ -2,6 +2,7 @@ import { Role } from "@prisma/client";
 import { logoutAction } from "@/lib/actions";
 import { AuthForms } from "@/app/account/auth-forms";
 import { auth } from "@/lib/auth";
+import { getEntityTypeLabel, getSubmissionTypeLabel } from "@/lib/entity-labels";
 import { prisma } from "@/lib/prisma";
 import { AuthCard } from "@/components/auth-card";
 
@@ -36,7 +37,7 @@ export default async function AccountPage({
       <div className="space-y-3">
         {submissions.map((s) => (
           <article key={s.id} className="rounded border border-slate-300 bg-white p-3">
-            <div className="text-sm">{s.targetEntityType} / {s.submissionType}</div>
+            <div className="text-sm">{getEntityTypeLabel(s.targetEntityType)} / {getSubmissionTypeLabel(s.submissionType)}</div>
             <div className="font-medium">Статус: {s.status}</div>
             {s.moderatorComment && <p className="text-sm text-slate-700">Комментарий: {s.moderatorComment}</p>}
           </article>
