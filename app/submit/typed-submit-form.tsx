@@ -122,7 +122,7 @@ export function TypedSubmitForm() {
             <label className="block">Ссылка на файл<input name="fileUrl" type="url" className={getInputClass("fileUrl")} placeholder="https://..." /></label>
             <label className="block">Ссылка на превью<input name="previewImageUrl" type="url" className={getInputClass("previewImageUrl")} placeholder="https://..." /></label>
           </div>
-          <p className="text-xs text-slate-500">* Нужно указать хотя бы одну ссылку: fileUrl или previewImageUrl.</p>
+          <p className="text-xs text-slate-500">* Нужно заполнить данными хотя бы одну строку со ссылкой.</p>
         </div>
       )}
 

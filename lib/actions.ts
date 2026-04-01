@@ -91,7 +91,7 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
   if (data.targetEntityType === "ArchiveMaterial" && !data.fileUrl && !data.previewImageUrl) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Нужно заполнить fileUrl или previewImageUrl",
+      message: "Нужно заполнить данными хотя бы одну строку со ссылкой",
       path: ["fileUrl"]
     });
   }
