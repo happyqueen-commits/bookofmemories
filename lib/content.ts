@@ -11,31 +11,25 @@ export function buildArchiveMaterialsWhere(query?: string, type?: string): Prism
   const searchFilter = buildSearchFilter(query);
 
   return {
-    AND: [
-      { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] },
-      ...(searchFilter ? [{ OR: [{ title: searchFilter }, { description: searchFilter }] }] : [])
-    ],
+    moderationStatus: ModerationStatus.approved,
+    ...(searchFilter
+      ? {
+          OR: [{ title: searchFilter }, { description: searchFilter }]
+        }
+      : {}),
     ...(type ? { materialType: type } : {})
   };
 }
 
 export async function getHomepageData() {
   const [featuredPersons, latestArchive, latestChronicle, stats] = await Promise.all([
-    prisma.person.findMany({
-      where: { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] },
-      take: 3,
-      orderBy: { publishedAt: "desc" }
-    }),
-    prisma.archiveMaterial.findMany({ where: buildArchiveMaterialsWhere(), take: 4, orderBy: { publishedAt: "desc" } }),
-    prisma.chronicleEvent.findMany({
-      where: { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] },
-      take: 3,
-      orderBy: { eventDate: "desc" }
-    }),
+    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { publishedAt: "desc" } }),
+    prisma.archiveMaterial.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 4, orderBy: { publishedAt: "desc" } }),
+    prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { eventDate: "desc" } }),
     Promise.all([
-      prisma.person.count({ where: { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] } }),
-      prisma.archiveMaterial.count({ where: buildArchiveMaterialsWhere() }),
-      prisma.chronicleEvent.count({ where: { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] } })
+      prisma.person.count({ where: { moderationStatus: ModerationStatus.approved } }),
+      prisma.archiveMaterial.count({ where: { moderationStatus: ModerationStatus.approved } }),
+      prisma.chronicleEvent.count({ where: { moderationStatus: ModerationStatus.approved } })
     ])
   ]);
 
@@ -47,30 +41,10 @@ export async function getPublicLists(query?: string) {
   const searchFilter = buildSearchFilter(search);
 
   const [persons, archive, stories, chronicle] = await Promise.all([
-    prisma.person.findMany({
-      where: {
-        AND: [
-          { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] },
-          ...(searchFilter ? [{ OR: [{ fullName: searchFilter }] }] : [])
-        ]
-      },
-      orderBy: { publishedAt: "desc" }
-    }),
+    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ fullName: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
     prisma.archiveMaterial.findMany({ where: buildArchiveMaterialsWhere(search), orderBy: { publishedAt: "desc" } }),
-    prisma.story.findMany({
-      where: {
-        OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }],
-        ...(searchFilter ? { AND: [{ OR: [{ title: searchFilter }, { excerpt: searchFilter }] }] } : {})
-      },
-      orderBy: { publishedAt: "desc" }
-    }),
-    prisma.chronicleEvent.findMany({
-      where: {
-        OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }],
-        ...(searchFilter ? { AND: [{ OR: [{ title: searchFilter }, { summary: searchFilter }] }] } : {})
-      },
-      orderBy: { eventDate: "desc" }
-    })
+    prisma.story.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { excerpt: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
+    prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { summary: searchFilter }] : undefined }, orderBy: { eventDate: "desc" } })
   ]);
 
   return { persons, archive, stories, chronicle };

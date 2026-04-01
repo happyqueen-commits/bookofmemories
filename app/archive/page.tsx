@@ -14,7 +14,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: { q?
       orderBy: { publishedAt: "desc" }
     }),
     prisma.archiveMaterial.findMany({
-      where: { OR: [{ moderationStatus: ModerationStatus.approved }, { publishedAt: { not: null } }] },
+      where: { moderationStatus: ModerationStatus.approved },
       distinct: ["materialType"],
       select: { materialType: true },
       orderBy: { materialType: "asc" }
