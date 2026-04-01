@@ -48,7 +48,6 @@ export function TypedSubmitForm() {
     tags: "Теги",
     fileUrl: "Ссылка на файл",
     previewImageUrl: "Ссылка на превью",
-    storyType: "Тип истории",
     excerpt: "Короткое описание",
     content: "Полный текст / подробное описание",
     summary: "Краткая сводка",
@@ -61,7 +60,6 @@ export function TypedSubmitForm() {
   const description = useMemo(() => {
     if (entityType === "Person") return "Данные о персоне для раздела \"Книга памяти\".";
     if (entityType === "ArchiveMaterial") return "Архивный материал: документ, фото, публикация, ссылка.";
-    if (entityType === "Story") return "История или интервью для раздела воспоминаний.";
     return "Событие для раздела хроники с датой и описанием.";
   }, [entityType]);
 
@@ -82,7 +80,7 @@ export function TypedSubmitForm() {
           onChange={(event) => setEntityType(event.target.value as EntityType)}
           className={baseInputClass}
         >
-          {ENTITY_TYPE_OPTIONS.map((option) => (
+          {ENTITY_TYPE_OPTIONS.filter((option) => option.value !== "Story").map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -123,18 +121,6 @@ export function TypedSubmitForm() {
             <label className="block">Ссылка на превью <span className="text-slate-500">(одно из двух обязательно)</span><input name="previewImageUrl" type="url" className={getInputClass("previewImageUrl")} placeholder="https://..." /></label>
           </div>
           <p className="text-xs text-slate-500">* Нужно заполнить данными хотя бы одну строку со ссылкой.</p>
-        </div>
-      )}
-
-      {entityType === "Story" && (
-        <div className="space-y-3">
-          <label className="block">Заголовок <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} required /></label>
-          <label className="block">Короткое описание <span className="text-slate-500">(обязательно)</span><textarea name="excerpt" className={getInputClass("excerpt")} rows={3} required /></label>
-          <label className="block">Полный текст <span className="text-slate-500">(обязательно)</span><textarea name="content" className={getInputClass("content")} rows={8} required /></label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Тип истории <span className="text-slate-500">(обязательно)</span><input name="storyType" className={getInputClass("storyType")} required placeholder="Интервью, воспоминание..." /></label>
-            <label className="block">Источник <span className="text-slate-500">(необязательно)</span><input name="sourceInfo" className={getInputClass("sourceInfo")} /></label>
-          </div>
         </div>
       )}
 
