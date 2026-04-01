@@ -57,7 +57,9 @@ export function TypedSubmitForm() {
     excerpt: "Короткое описание",
     content: "Полный текст / подробное описание",
     summary: "Краткая сводка",
-    coverImageUrl: "Обложка (URL)"
+    coverImageUrl: "Обложка (URL)",
+    contactName: "Ваше имя",
+    contactEmail: "Email для связи"
   };
 
   const getInputClass = (fieldName: string) =>
@@ -94,6 +96,12 @@ export function TypedSubmitForm() {
       </label>
 
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
+
+      <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
+        <p className="text-sm font-medium text-slate-800">Контакты для связи по заявке</p>
+        <label className="block">Ваше имя <span className="text-slate-500">(обязательно)</span><input name="contactName" className={getInputClass("contactName")} defaultValue={getPrefillValue("contactName")} required /></label>
+        <label className="block">Email для связи <span className="text-slate-500">(обязательно)</span><input name="contactEmail" type="email" className={getInputClass("contactEmail")} defaultValue={getPrefillValue("contactEmail")} required /></label>
+      </div>
 
       {entityType === "Person" && (
         <div className="space-y-3">

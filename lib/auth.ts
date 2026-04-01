@@ -60,6 +60,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new LoginRejectedError("invalid_credentials");
         }
 
+        if (user.role !== Role.ADMIN && user.role !== Role.MODERATOR) {
+          await recordFailedLoginAttempt(email, ip);
+          throw new LoginRejectedError("invalid_credentials");
+        }
+
         await clearLoginRateLimit(email, ip);
 
         return {
@@ -75,7 +80,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     jwt: async ({ token, user, trigger }) => {
       if (user) {
-        token.role = (user as { role?: Role }).role ?? Role.AUTHOR;
+        token.role = (user as { role?: Role }).role ?? Role.MODERATOR;
         token.loginErrorCode = (user as { authContext?: { loginErrorCode?: string | null } }).authContext?.loginErrorCode ?? null;
       }
 
@@ -88,7 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session: async ({ session, token }) => {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = (token.role as Role) ?? Role.AUTHOR;
+        session.user.role = (token.role as Role) ?? Role.MODERATOR;
       }
       return session;
     }

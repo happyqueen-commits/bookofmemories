@@ -8,12 +8,12 @@ const publicLinks = [
   ["/memory", "Книга памяти"],
   ["/chronicle", "Хроника"],
   ["/submit", "Добавить материал"],
+  ["/submission-status", "Статус заявки"],
   ["/about", "О проекте"]
 ] as const;
 
 export async function Nav() {
   const session = await auth();
-  const isAuthenticated = Boolean(session?.user);
   const isAdmin = session?.user?.role === Role.MODERATOR || session?.user?.role === Role.ADMIN;
 
   return (
@@ -23,7 +23,7 @@ export async function Nav() {
           Книга памяти
         </Link>
 
-        <NavLinksClient publicLinks={publicLinks} isAuthenticated={isAuthenticated} isAdmin={isAdmin} />
+        <NavLinksClient publicLinks={publicLinks} isAdmin={isAdmin} />
       </div>
     </header>
   );
