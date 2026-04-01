@@ -22,18 +22,16 @@ export function buildArchiveMaterialsWhere(query?: string, type?: string): Prism
 }
 
 export async function getHomepageData() {
-  const [featuredPersons, latestArchive, latestChronicle, stats] = await Promise.all([
+  const [featuredPersons, latestChronicle, stats] = await Promise.all([
     prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { publishedAt: "desc" } }),
-    prisma.archiveMaterial.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 4, orderBy: { publishedAt: "desc" } }),
     prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { eventDate: "desc" } }),
     Promise.all([
       prisma.person.count({ where: { moderationStatus: ModerationStatus.approved } }),
-      prisma.archiveMaterial.count({ where: { moderationStatus: ModerationStatus.approved } }),
       prisma.chronicleEvent.count({ where: { moderationStatus: ModerationStatus.approved } })
     ])
   ]);
 
-  return { featuredPersons, latestArchive, latestChronicle, stats };
+  return { featuredPersons, latestChronicle, stats };
 }
 
 export async function getPublicLists(query?: string) {

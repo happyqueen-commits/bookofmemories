@@ -29,7 +29,7 @@ export function TypedSubmitForm() {
   const searchParams = useSearchParams();
   const initialEntityType = searchParams.get("targetEntityType");
   const [entityType, setEntityType] = useState<EntityType>(
-    initialEntityType === "Person" || initialEntityType === "ArchiveMaterial" || initialEntityType === "ChronicleEvent"
+    initialEntityType === "Person" || initialEntityType === "ChronicleEvent"
       ? initialEntityType
       : "Person"
   );
@@ -65,7 +65,6 @@ export function TypedSubmitForm() {
 
   const description = useMemo(() => {
     if (entityType === "Person") return "Данные о персоне для раздела \"Книга памяти\".";
-    if (entityType === "ArchiveMaterial") return "Архивный материал: документ, фото, публикация, ссылка.";
     return "Событие для раздела хроники с датой и описанием.";
   }, [entityType]);
 
@@ -86,7 +85,7 @@ export function TypedSubmitForm() {
           onChange={(event) => setEntityType(event.target.value as EntityType)}
           className={baseInputClass}
         >
-          {ENTITY_TYPE_OPTIONS.filter((option) => option.value !== "Story").map((option) => (
+          {ENTITY_TYPE_OPTIONS.filter((option) => option.value !== "Story" && option.value !== "ArchiveMaterial").map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -109,24 +108,6 @@ export function TypedSubmitForm() {
             <label className="block">Кафедра <span className="text-slate-500">(необязательно)</span><input name="department" className={getInputClass("department")} defaultValue={getPrefillValue("department")} /></label>
           </div>
           <label className="block">Краткое описание <span className="text-slate-500">(необязательно)</span><input name="shortDescription" className={getInputClass("shortDescription")} defaultValue={getPrefillValue("shortDescription")} /></label>
-        </div>
-      )}
-
-      {entityType === "ArchiveMaterial" && (
-        <div className="space-y-3">
-          <label className="block">Название материала <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} defaultValue={getPrefillValue("title")} required /></label>
-          <label className="block">Описание <span className="text-slate-500">(обязательно)</span><textarea name="description" className={getInputClass("description")} rows={5} defaultValue={getPrefillValue("description")} required /></label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Тип материала <span className="text-slate-500">(обязательно)</span><input name="materialType" className={getInputClass("materialType")} defaultValue={getPrefillValue("materialType")} required placeholder="Фото, документ, видео..." /></label>
-            <label className="block">Дата события <span className="text-slate-500">(необязательно)</span><input name="eventDate" type="date" className={getInputClass("eventDate")} defaultValue={getPrefillValue("eventDate")} /></label>
-          </div>
-          <label className="block">Источник <span className="text-slate-500">(обязательно)</span><input name="sourceInfo" className={getInputClass("sourceInfo")} defaultValue={getPrefillValue("sourceInfo")} required /></label>
-          <label className="block">Теги <span className="text-slate-500">(обязательно)</span><input name="tags" className={getInputClass("tags")} defaultValue={getPrefillValue("tags")} required placeholder="история, архив, выпускники" /></label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Ссылка на файл <span className="text-slate-500">(одно из двух обязательно)</span><input name="fileUrl" type="url" className={getInputClass("fileUrl")} defaultValue={getPrefillValue("fileUrl")} placeholder="https://..." /></label>
-            <label className="block">Ссылка на превью <span className="text-slate-500">(одно из двух обязательно)</span><input name="previewImageUrl" type="url" className={getInputClass("previewImageUrl")} defaultValue={getPrefillValue("previewImageUrl")} placeholder="https://..." /></label>
-          </div>
-          <p className="text-xs text-slate-500">* Нужно заполнить данными хотя бы одну строку со ссылкой.</p>
         </div>
       )}
 
