@@ -6,7 +6,6 @@ import { NavLinksClient } from "@/components/nav-links-client";
 const publicLinks = [
   ["/", "Главная"],
   ["/memory", "Книга памяти"],
-  ["/archive", "Архив"],
   ["/chronicle", "Хроника"],
   ["/submit", "Добавить материал"],
   ["/about", "О проекте"]

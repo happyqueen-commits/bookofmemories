@@ -29,14 +29,6 @@ const optionalDate = z.preprocess((value) => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }, z.date().optional());
 
-const splitTags = z.preprocess((value) => {
-  if (typeof value !== "string") return [];
-  return value
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}, z.array(z.string().min(1)).min(1));
-
 const personSchema = z.object({
   targetEntityType: z.literal("Person"),
   fullName: z.string().trim().min(2),
@@ -46,18 +38,6 @@ const personSchema = z.object({
   deathDate: optionalDate,
   faculty: optionalTrimmedString,
   department: optionalTrimmedString
-});
-
-const archiveMaterialSchema = z.object({
-  targetEntityType: z.literal("ArchiveMaterial"),
-  title: z.string().trim().min(2),
-  description: z.string().trim().min(3),
-  materialType: z.string().trim().min(2),
-  sourceInfo: z.string().trim().min(2),
-  eventDate: optionalDate,
-  tags: splitTags,
-  fileUrl: optionalUrl,
-  previewImageUrl: optionalUrl
 });
 
 const storySchema = z.object({
@@ -84,18 +64,9 @@ const chronicleEventSchema = z.object({
 
 const submitSchema = z.discriminatedUnion("targetEntityType", [
   personSchema,
-  archiveMaterialSchema,
   storySchema,
   chronicleEventSchema
-]).superRefine((data, ctx) => {
-  if (data.targetEntityType === "ArchiveMaterial" && !data.fileUrl && !data.previewImageUrl) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Нужно заполнить данными хотя бы одну строку со ссылкой",
-      path: ["fileUrl"]
-    });
-  }
-});
+]);
 
 const moderateSchema = z.object({
   submissionId: z.string().cuid(),
@@ -454,25 +425,6 @@ export async function moderateSubmissionAction(formData: FormData) {
       createdEntityId = createdPerson.id;
     }
 
-    if (payload.targetEntityType === EntityType.ArchiveMaterial) {
-      const createdArchiveMaterial = await tx.archiveMaterial.create({
-        data: {
-          ...dataCommon,
-          slug,
-          title: payload.title,
-          description: payload.description,
-          materialType: payload.materialType,
-          sourceInfo: payload.sourceInfo,
-          eventDate: payload.eventDate,
-          tags: payload.tags,
-          fileUrl: payload.fileUrl,
-          previewImageUrl: payload.previewImageUrl
-        }
-      });
-
-      createdEntityId = createdArchiveMaterial.id;
-    }
-
     if (payload.targetEntityType === EntityType.Story) {
       const createdStory = await tx.story.create({
         data: {
@@ -515,6 +467,5 @@ export async function moderateSubmissionAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/memory");
-  revalidatePath("/archive");
   revalidatePath("/chronicle");
 }
