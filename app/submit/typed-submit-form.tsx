@@ -75,7 +75,7 @@ export function TypedSubmitForm() {
       )}
 
       <label className="block">
-        Что вы хотите добавить
+        Что вы хотите добавить <span className="text-slate-500">(обязательно)</span>
         <select
           name="targetEntityType"
           value={entityType}
@@ -94,33 +94,33 @@ export function TypedSubmitForm() {
 
       {entityType === "Person" && (
         <div className="space-y-3">
-          <label className="block">ФИО *<input name="fullName" className={getInputClass("fullName")} required /></label>
-          <label className="block">Биография *<textarea name="biography" className={getInputClass("biography")} rows={6} required /></label>
+          <label className="block">ФИО <span className="text-slate-500">(обязательно)</span><input name="fullName" className={getInputClass("fullName")} required /></label>
+          <label className="block">Биография <span className="text-slate-500">(обязательно)</span><textarea name="biography" className={getInputClass("biography")} rows={6} required /></label>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Дата рождения<input name="birthDate" type="date" className={getInputClass("birthDate")} /></label>
-            <label className="block">Дата смерти<input name="deathDate" type="date" className={getInputClass("deathDate")} /></label>
+            <label className="block">Дата рождения <span className="text-slate-500">(необязательно)</span><input name="birthDate" type="date" className={getInputClass("birthDate")} /></label>
+            <label className="block">Дата смерти <span className="text-slate-500">(необязательно)</span><input name="deathDate" type="date" className={getInputClass("deathDate")} /></label>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Факультет<input name="faculty" className={getInputClass("faculty")} /></label>
-            <label className="block">Кафедра<input name="department" className={getInputClass("department")} /></label>
+            <label className="block">Факультет <span className="text-slate-500">(необязательно)</span><input name="faculty" className={getInputClass("faculty")} /></label>
+            <label className="block">Кафедра <span className="text-slate-500">(необязательно)</span><input name="department" className={getInputClass("department")} /></label>
           </div>
-          <label className="block">Краткое описание<input name="shortDescription" className={getInputClass("shortDescription")} /></label>
+          <label className="block">Краткое описание <span className="text-slate-500">(необязательно)</span><input name="shortDescription" className={getInputClass("shortDescription")} /></label>
         </div>
       )}
 
       {entityType === "ArchiveMaterial" && (
         <div className="space-y-3">
-          <label className="block">Название материала *<input name="title" className={getInputClass("title")} required /></label>
-          <label className="block">Описание *<textarea name="description" className={getInputClass("description")} rows={5} required /></label>
+          <label className="block">Название материала <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} required /></label>
+          <label className="block">Описание <span className="text-slate-500">(обязательно)</span><textarea name="description" className={getInputClass("description")} rows={5} required /></label>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Тип материала *<input name="materialType" className={getInputClass("materialType")} required placeholder="Фото, документ, видео..." /></label>
-            <label className="block">Дата события<input name="eventDate" type="date" className={getInputClass("eventDate")} /></label>
+            <label className="block">Тип материала <span className="text-slate-500">(обязательно)</span><input name="materialType" className={getInputClass("materialType")} required placeholder="Фото, документ, видео..." /></label>
+            <label className="block">Дата события <span className="text-slate-500">(необязательно)</span><input name="eventDate" type="date" className={getInputClass("eventDate")} /></label>
           </div>
-          <label className="block">Источник *<input name="sourceInfo" className={getInputClass("sourceInfo")} required /></label>
-          <label className="block">Теги *<input name="tags" className={getInputClass("tags")} required placeholder="история, архив, выпускники" /></label>
+          <label className="block">Источник <span className="text-slate-500">(обязательно)</span><input name="sourceInfo" className={getInputClass("sourceInfo")} required /></label>
+          <label className="block">Теги <span className="text-slate-500">(обязательно)</span><input name="tags" className={getInputClass("tags")} required placeholder="история, архив, выпускники" /></label>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Ссылка на файл<input name="fileUrl" type="url" className={getInputClass("fileUrl")} placeholder="https://..." /></label>
-            <label className="block">Ссылка на превью<input name="previewImageUrl" type="url" className={getInputClass("previewImageUrl")} placeholder="https://..." /></label>
+            <label className="block">Ссылка на файл <span className="text-slate-500">(одно из двух обязательно)</span><input name="fileUrl" type="url" className={getInputClass("fileUrl")} placeholder="https://..." /></label>
+            <label className="block">Ссылка на превью <span className="text-slate-500">(одно из двух обязательно)</span><input name="previewImageUrl" type="url" className={getInputClass("previewImageUrl")} placeholder="https://..." /></label>
           </div>
           <p className="text-xs text-slate-500">* Нужно заполнить данными хотя бы одну строку со ссылкой.</p>
         </div>
@@ -128,23 +128,23 @@ export function TypedSubmitForm() {
 
       {entityType === "Story" && (
         <div className="space-y-3">
-          <label className="block">Заголовок *<input name="title" className={getInputClass("title")} required /></label>
-          <label className="block">Короткое описание *<textarea name="excerpt" className={getInputClass("excerpt")} rows={3} required /></label>
-          <label className="block">Полный текст *<textarea name="content" className={getInputClass("content")} rows={8} required /></label>
+          <label className="block">Заголовок <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} required /></label>
+          <label className="block">Короткое описание <span className="text-slate-500">(обязательно)</span><textarea name="excerpt" className={getInputClass("excerpt")} rows={3} required /></label>
+          <label className="block">Полный текст <span className="text-slate-500">(обязательно)</span><textarea name="content" className={getInputClass("content")} rows={8} required /></label>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block">Тип истории *<input name="storyType" className={getInputClass("storyType")} required placeholder="Интервью, воспоминание..." /></label>
-            <label className="block">Источник<input name="sourceInfo" className={getInputClass("sourceInfo")} /></label>
+            <label className="block">Тип истории <span className="text-slate-500">(обязательно)</span><input name="storyType" className={getInputClass("storyType")} required placeholder="Интервью, воспоминание..." /></label>
+            <label className="block">Источник <span className="text-slate-500">(необязательно)</span><input name="sourceInfo" className={getInputClass("sourceInfo")} /></label>
           </div>
         </div>
       )}
 
       {entityType === "ChronicleEvent" && (
         <div className="space-y-3">
-          <label className="block">Заголовок *<input name="title" className={getInputClass("title")} required /></label>
-          <label className="block">Краткая сводка *<textarea name="summary" className={getInputClass("summary")} rows={3} required /></label>
-          <label className="block">Подробное описание *<textarea name="content" className={getInputClass("content")} rows={8} required /></label>
-          <label className="block">Дата события *<input name="eventDate" type="date" className={getInputClass("eventDate")} required /></label>
-          <label className="block">Обложка (URL)<input name="coverImageUrl" type="url" className={getInputClass("coverImageUrl")} placeholder="https://..." /></label>
+          <label className="block">Заголовок <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} required /></label>
+          <label className="block">Краткая сводка <span className="text-slate-500">(обязательно)</span><textarea name="summary" className={getInputClass("summary")} rows={3} required /></label>
+          <label className="block">Подробное описание <span className="text-slate-500">(обязательно)</span><textarea name="content" className={getInputClass("content")} rows={8} required /></label>
+          <label className="block">Дата события <span className="text-slate-500">(обязательно)</span><input name="eventDate" type="date" className={getInputClass("eventDate")} required /></label>
+          <label className="block">Обложка (URL) <span className="text-slate-500">(необязательно)</span><input name="coverImageUrl" type="url" className={getInputClass("coverImageUrl")} placeholder="https://..." /></label>
         </div>
       )}
 
