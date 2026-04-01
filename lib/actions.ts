@@ -365,6 +365,8 @@ export async function submitMaterialAction(formData: FormData) {
 
   revalidatePath("/account");
   revalidatePath("/admin");
+
+  redirect("/submit?success=submitted");
 }
 
 export async function moderateSubmissionAction(formData: FormData) {

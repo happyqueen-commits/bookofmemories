@@ -1,11 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { EntityType } from "@prisma/client";
 import { submitMaterialAction } from "@/lib/actions";
 import { ENTITY_TYPE_OPTIONS } from "@/lib/entity-labels";
 
 const baseInputClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
+
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      className="rounded bg-slate-800 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-70"
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+    >
+      {pending ? "Отправляем..." : "Отправить на модерацию"}
+    </button>
+  );
+}
 
 export function TypedSubmitForm() {
   const [entityType, setEntityType] = useState<EntityType>("Person");
@@ -93,7 +110,7 @@ export function TypedSubmitForm() {
         </div>
       )}
 
-      <button className="rounded bg-slate-800 px-4 py-2 text-white" type="submit">Отправить на модерацию</button>
+      <SubmitButton />
     </form>
   );
 }
