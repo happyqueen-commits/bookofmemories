@@ -516,6 +516,5 @@ export async function moderateSubmissionAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/memory");
   revalidatePath("/archive");
-  revalidatePath("/stories");
   revalidatePath("/chronicle");
 }
