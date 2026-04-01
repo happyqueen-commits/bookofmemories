@@ -350,7 +350,15 @@ export async function submitMaterialAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect("/submit?error=invalid_form");
+    const firstIssue = parsed.error.issues[0];
+    const field = typeof firstIssue?.path?.[0] === "string" ? firstIssue.path[0] : "form";
+    const message = firstIssue?.message ?? "Проверьте форму.";
+    const params = new URLSearchParams({
+      error: "invalid_form",
+      field,
+      message
+    });
+    redirect(`/submit?${params.toString()}`);
   }
 
   await prisma.submission.create({
