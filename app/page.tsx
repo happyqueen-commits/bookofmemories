@@ -4,7 +4,7 @@ import { SearchForm } from "@/components/search-form";
 import { getHomepageData } from "@/lib/content";
 
 export default async function Home() {
-  const { featuredPersons, latestChronicle, stats } = await getHomepageData();
+  const { featuredPersons, stats } = await getHomepageData();
 
   return (
     <div className="space-y-rhythm">
@@ -23,21 +23,11 @@ export default async function Home() {
         <div className="grid items-stretch gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
       </section>
 
-
-      <section className="section-reveal reveal-delay-2 rounded border border-slate-200 bg-tint-sky p-section-pad">
-        <h2 className="section-title mb-3">Хроника</h2>
-        <div className="space-y-3">{latestChronicle.map((e) => <Card key={e.id} title={e.title} text={e.summary} href={`/chronicle/${e.slug}`} />)}</div>
-      </section>
-
       <section className="section-reveal reveal-delay-3 rounded border border-slate-300 bg-white p-section-pad">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <div className="rounded-lg border border-slate-200 bg-tint-lavender p-4">
-            <p className="text-3xl font-bold leading-none text-accent">{stats[0]}</p>
+            <p className="text-3xl font-bold leading-none text-accent">{stats}</p>
             <p className="mt-2 text-sm text-slate-600">Персон</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-tint-lavender p-4">
-            <p className="text-3xl font-bold leading-none text-accent">{stats[1]}</p>
-            <p className="mt-2 text-sm text-slate-600">Событий</p>
           </div>
         </div>
       </section>

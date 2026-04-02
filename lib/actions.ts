@@ -49,23 +49,9 @@ const storySchema = z.object({
   sourceInfo: optionalTrimmedString
 });
 
-const chronicleEventSchema = z.object({
-  targetEntityType: z.literal("ChronicleEvent"),
-  title: z.string().trim().min(2),
-  summary: z.string().trim().min(3),
-  content: z.string().trim().min(10),
-  eventDate: z.preprocess((value) => {
-    if (typeof value !== "string") return value;
-    const trimmed = value.trim();
-    return trimmed ? new Date(trimmed) : undefined;
-  }, z.date()),
-  coverImageUrl: optionalUrl
-});
-
 const submitSchema = z.discriminatedUnion("targetEntityType", [
   personSchema,
-  storySchema,
-  chronicleEventSchema
+  storySchema
 ]);
 
 const submitContactSchema = z.object({
@@ -257,7 +243,6 @@ export async function submitMaterialAction(formData: FormData) {
     description: formData.get("description"),
     materialType: formData.get("materialType"),
     sourceInfo: formData.get("sourceInfo"),
-    eventDate: formData.get("eventDate"),
     tags: formData.get("tags"),
     fileUrl: formData.get("fileUrl"),
     previewImageUrl: formData.get("previewImageUrl"),
@@ -399,22 +384,6 @@ export async function moderateSubmissionAction(formData: FormData) {
       createdEntityId = createdStory.id;
     }
 
-    if (payload.targetEntityType === EntityType.ChronicleEvent) {
-      const createdChronicleEvent = await tx.chronicleEvent.create({
-        data: {
-          ...dataCommon,
-          slug,
-          title: payload.title,
-          summary: payload.summary,
-          content: payload.content,
-          eventDate: payload.eventDate,
-          coverImageUrl: payload.coverImageUrl
-        }
-      });
-
-      createdEntityId = createdChronicleEvent.id;
-    }
-
     if (createdEntityId) {
       await tx.submission.update({
         where: { id: submission.id },
@@ -425,5 +394,4 @@ export async function moderateSubmissionAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/memory");
-  revalidatePath("/chronicle");
 }
