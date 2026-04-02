@@ -51,7 +51,8 @@ function formatSubmitValidationIssue(issue?: z.ZodIssue) {
   if (!issue) {
     return {
       field: "form",
-      message: "Проверьте форму."
+      message: "Проверьте форму.",
+      line: undefined as number | undefined
     };
   }
 
@@ -66,13 +67,15 @@ function formatSubmitValidationIssue(issue?: z.ZodIssue) {
   if (pathRoot === "photoUrls" && pathIndex !== undefined) {
     return {
       field: "photoUrls",
-      message: `Ошибка в поле «Фото»: строка ${pathIndex + 1}. Укажите полный URL (например, https://example.com/photo.jpg).`
+      message: "Укажите полный URL изображения (например, https://example.com/photo.jpg).",
+      line: pathIndex + 1
     };
   }
 
   return {
     field: pathRoot,
-    message: fallbackMessage
+    message: fallbackMessage,
+    line: undefined as number | undefined
   };
 }
 
@@ -311,7 +314,7 @@ export async function submitMaterialAction(formData: FormData) {
       : !parsed.success
         ? parsed.error.issues[0]
         : undefined;
-    const { field, message } = formatSubmitValidationIssue(issue);
+    const { field, message, line } = formatSubmitValidationIssue(issue);
     const params = new URLSearchParams({
       error: "invalid_form",
       field,
@@ -327,6 +330,9 @@ export async function submitMaterialAction(formData: FormData) {
       shortDescription: String(formData.get("shortDescription") ?? ""),
       photoUrls: String(formData.get("photoUrls") ?? "")
     });
+    if (typeof line === "number") {
+      params.set("line", String(line));
+    }
     redirect(`/submit?${params.toString()}`);
   }
 

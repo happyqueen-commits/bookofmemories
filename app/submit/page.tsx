@@ -9,8 +9,6 @@ type SubmitPageProps = {
 
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const params = (await searchParams) ?? {};
-  const hasValidationError = params.error === "invalid_form";
-  const hasSubmittedSuccess = params.success === "submitted";
   const submittedSubmissionId = params.submissionId;
   const submittedAccessToken = params.accessToken;
 
@@ -48,36 +46,24 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold">Добавить материал</h1>
-      {hasValidationError && (
-        <p className="mb-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          Проверьте форму: обязательные поля зависят от выбранного раздела.
-        </p>
-      )}
-      {hasSubmittedSuccess && (
-        <div className="mb-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          <p>Материал отправлен на модерацию. После проверки он появится в соответствующем разделе.</p>
-          <p className="mt-1">
-            Проверить статус можно на странице{" "}
-            <Link
-              href={submittedSubmissionId && submittedAccessToken
-                ? `/submission-status?submissionId=${encodeURIComponent(submittedSubmissionId)}&accessToken=${encodeURIComponent(submittedAccessToken)}`
-                : "/submission-status"}
-              className="underline"
-            >
-              статуса заявок
-            </Link>.
-          </p>
-          <p className="mt-1">
-            Сохраните ссылку со страницы статуса: по ней можно проверять и дорабатывать заявку без регистрации.
-          </p>
-        </div>
-      )}
       {editableSubmission ? (
         <p className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Вы редактируете материал после возврата на доработку.
         </p>
       ) : null}
       <TypedSubmitForm editableSubmission={editableSubmission} />
+      {submittedSubmissionId && submittedAccessToken ? (
+        <p className="mt-3 text-sm text-slate-600">
+          Ссылка для проверки статуса:{" "}
+          <Link
+            href={`/submission-status?submissionId=${encodeURIComponent(submittedSubmissionId)}&accessToken=${encodeURIComponent(submittedAccessToken)}`}
+            className="underline"
+          >
+            открыть страницу статуса заявки
+          </Link>
+          .
+        </p>
+      ) : null}
     </div>
   );
 }
