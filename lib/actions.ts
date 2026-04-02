@@ -66,7 +66,8 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
   contactEmail: z.string().trim().email("Укажите корректный email для обратной связи."),
-  submissionId: z.string().cuid().optional().or(z.literal(""))
+  submissionId: z.string().cuid().optional().or(z.literal("")),
+  accessToken: z.string().trim().min(32).optional().or(z.literal(""))
 });
 
 const moderateSchema = z.object({
@@ -239,7 +240,8 @@ export async function submitMaterialAction(formData: FormData) {
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
     contactEmail: formData.get("contactEmail"),
-    submissionId: formData.get("submissionId")
+    submissionId: formData.get("submissionId"),
+    accessToken: formData.get("accessToken")
   });
   const parsed = submitSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
@@ -292,10 +294,21 @@ export async function submitMaterialAction(formData: FormData) {
   }
 
   const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
+  const accessTokenHash = contactParsed.data.accessToken
+    ? crypto.createHash("sha256").update(contactParsed.data.accessToken).digest("hex")
+    : null;
 
   if (contactParsed.data.submissionId) {
+    if (!accessTokenHash) {
+      redirect(`/submit?error=invalid_form&field=form&message=${encodeURIComponent("Для доработки нужен ключ доступа к заявке")}`);
+    }
+
     const updated = await prisma.submission.updateMany({
-      where: { id: contactParsed.data.submissionId, contactEmail: normalizedEmail },
+      where: {
+        id: contactParsed.data.submissionId,
+        contactEmail: normalizedEmail,
+        accessTokenHash
+      },
       data: {
         payloadJson: parsed.data,
         contactName: contactParsed.data.contactName,
@@ -309,17 +322,29 @@ export async function submitMaterialAction(formData: FormData) {
       redirect(`/submit?error=invalid_form&field=form&message=${encodeURIComponent("Нельзя редактировать эту заявку")}`);
     }
   } else {
-    await prisma.submission.create({
+    const rawAccessToken = crypto.randomBytes(24).toString("hex");
+    const createdAccessTokenHash = crypto.createHash("sha256").update(rawAccessToken).digest("hex");
+
+    const createdSubmission = await prisma.submission.create({
       data: {
         authorId: null,
         contactName: contactParsed.data.contactName,
         contactEmail: normalizedEmail,
+        accessTokenHash: createdAccessTokenHash,
         payloadJson: parsed.data,
         submissionType: SubmissionType.create,
         targetEntityType: parsed.data.targetEntityType as EntityType,
         status: ModerationStatus.pending
-      }
+      },
+      select: { id: true }
     });
+
+    const successParams = new URLSearchParams({
+      success: "submitted",
+      submissionId: createdSubmission.id,
+      accessToken: rawAccessToken
+    });
+    redirect(`/submit?${successParams.toString()}`);
   }
 
   revalidatePath("/submission-status");
@@ -327,7 +352,8 @@ export async function submitMaterialAction(formData: FormData) {
 
   const successParams = new URLSearchParams({
     success: "submitted",
-    contactEmail: normalizedEmail
+    submissionId: contactParsed.data.submissionId || "",
+    accessToken: contactParsed.data.accessToken || ""
   });
   redirect(`/submit?${successParams.toString()}`);
 }

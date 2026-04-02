@@ -55,6 +55,7 @@ type TypedSubmitFormProps = {
     id: string;
     contactEmail: string;
     contactName: string;
+    accessToken: string;
     payload: Record<string, unknown>;
   };
 };
@@ -156,6 +157,7 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
 
       <input type="hidden" name="targetEntityType" value="Person" />
       {editableSubmission ? <input type="hidden" name="submissionId" value={editableSubmission.id} /> : null}
+      {editableSubmission ? <input type="hidden" name="accessToken" value={editableSubmission.accessToken} /> : null}
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
