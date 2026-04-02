@@ -282,8 +282,8 @@ export async function submitMaterialAction(formData: FormData) {
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
     contactEmail: formData.get("contactEmail"),
-    submissionId: formData.get("submissionId"),
-    accessToken: formData.get("accessToken")
+    submissionId: String(formData.get("submissionId") ?? ""),
+    accessToken: String(formData.get("accessToken") ?? "")
   });
   const parsed = submitSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
