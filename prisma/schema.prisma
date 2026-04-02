@@ -58,6 +58,7 @@ model Person {
   lastName          String
   middleName        String?
   photoUrl          String?
+  photoUrls         String[]          @default([])
   shortDescription  String
   biography         String
   universityRole    String?
