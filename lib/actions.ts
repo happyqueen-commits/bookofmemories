@@ -35,7 +35,46 @@ const optionalStringArrayFromLines = z.preprocess((value) => {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-}, z.array(z.string().url()).default([]));
+}, z.array(z.string()).superRefine((urls, ctx) => {
+  urls.forEach((url, index) => {
+    if (!z.string().url().safeParse(url).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index],
+        message: `Некорректный URL в строке ${index + 1}.`
+      });
+    }
+  });
+}).default([]));
+
+function formatSubmitValidationIssue(issue?: z.ZodIssue) {
+  if (!issue) {
+    return {
+      field: "form",
+      message: "Проверьте форму."
+    };
+  }
+
+  const pathRoot = typeof issue.path[0] === "string" ? issue.path[0] : "form";
+  const pathIndex = typeof issue.path[1] === "number" ? issue.path[1] : undefined;
+  const message = issue.message?.trim();
+  const genericMessages = new Set(["Invalid input", "Invalid input: expected string, received null"]);
+  const fallbackMessage = genericMessages.has(message)
+    ? "Проверьте заполнение формы."
+    : message || "Проверьте форму.";
+
+  if (pathRoot === "photoUrls" && pathIndex !== undefined) {
+    return {
+      field: "photoUrls",
+      message: `Ошибка в поле «Фото»: строка ${pathIndex + 1}. Укажите полный URL (например, https://example.com/photo.jpg).`
+    };
+  }
+
+  return {
+    field: pathRoot,
+    message: fallbackMessage
+  };
+}
 
 const personSchema = z.object({
   targetEntityType: z.literal("Person"),
@@ -272,9 +311,7 @@ export async function submitMaterialAction(formData: FormData) {
       : !parsed.success
         ? parsed.error.issues[0]
         : undefined;
-    const firstIssue = issue;
-    const field = typeof firstIssue?.path?.[0] === "string" ? firstIssue.path[0] : "form";
-    const message = firstIssue?.message ?? "Проверьте форму.";
+    const { field, message } = formatSubmitValidationIssue(issue);
     const params = new URLSearchParams({
       error: "invalid_form",
       field,
