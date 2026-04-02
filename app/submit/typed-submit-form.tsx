@@ -50,17 +50,7 @@ function SubmitButton() {
   );
 }
 
-type TypedSubmitFormProps = {
-  editableSubmission?: {
-    id: string;
-    contactEmail: string;
-    contactName: string;
-    accessToken: string;
-    payload: Record<string, unknown>;
-  };
-};
-
-export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
+export function TypedSubmitForm() {
   const searchParams = useSearchParams();
   const [entityType] = useState<EntityType>("Person");
   const errorField = searchParams.get("field");
@@ -99,28 +89,13 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [draft]);
 
+
+
   useEffect(() => {
-    if (!editableSubmission) return;
-    const payload = editableSubmission.payload;
-    const photoUrls = Array.isArray(payload.photoUrls)
-      ? payload.photoUrls.filter((item): item is string => typeof item === "string").join("\n")
-      : "";
-
-    setDraft((prev) => ({
-      ...prev,
-      contactEmail: editableSubmission.contactEmail,
-      contactName: editableSubmission.contactName,
-      fullName: typeof payload.fullName === "string" ? payload.fullName : prev.fullName,
-      biography: typeof payload.biography === "string" ? payload.biography : prev.biography,
-      birthDate: typeof payload.birthDate === "string" ? payload.birthDate.slice(0, 10) : prev.birthDate,
-      deathDate: typeof payload.deathDate === "string" ? payload.deathDate.slice(0, 10) : prev.deathDate,
-      faculty: typeof payload.faculty === "string" ? payload.faculty : prev.faculty,
-      department: typeof payload.department === "string" ? payload.department : prev.department,
-      shortDescription: typeof payload.shortDescription === "string" ? payload.shortDescription : prev.shortDescription,
-      photoUrls
-    }));
-  }, [editableSubmission]);
-
+    if (!isSubmitted) return;
+    setDraft({ ...defaultDraft });
+    window.localStorage.removeItem(DRAFT_KEY);
+  }, [isSubmitted]);
   const fieldLabels: Record<string, string> = {
     fullName: "ФИО",
     biography: "Биография",
@@ -161,13 +136,11 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
       )}
       {isSubmitted ? (
         <p className="rounded border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Материал отправлен. Содержимое формы сохранено, вы можете продолжить редактирование при необходимости.
+          Материал успешно отправлен. Форма очищена.
         </p>
       ) : null}
 
       <input type="hidden" name="targetEntityType" value="Person" />
-      {editableSubmission ? <input type="hidden" name="submissionId" value={editableSubmission.id} /> : null}
-      {editableSubmission ? <input type="hidden" name="accessToken" value={editableSubmission.accessToken} /> : null}
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">

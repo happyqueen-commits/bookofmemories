@@ -1,6 +1,6 @@
 "use server";
 
-import { EntityType, ModerationStatus, Prisma, Role, SubmissionType } from "@prisma/client";
+import { EntityType, ModerationStatus, Role, SubmissionType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { AuthError } from "next-auth";
@@ -107,9 +107,7 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
 
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
-  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи."),
-  submissionId: z.string().cuid().optional().or(z.literal("")),
-  accessToken: z.string().trim().min(32).optional().or(z.literal(""))
+  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
 });
 
 const moderateSchema = z.object({
@@ -117,14 +115,6 @@ const moderateSchema = z.object({
   status: z.enum(["approved", "needs_revision", "rejected"]),
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
-
-function isAccessTokenHashColumnMissingError(error: unknown) {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError
-    && error.code === "P2022"
-    && String(error.meta?.column ?? "").includes("accessTokenHash")
-  );
-}
 
 export type RegisterActionState = {
   status: "idle" | "error" | "success";
@@ -290,8 +280,6 @@ export async function submitMaterialAction(formData: FormData) {
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
     contactEmail: formData.get("contactEmail"),
-    submissionId: String(formData.get("submissionId") ?? ""),
-    accessToken: String(formData.get("accessToken") ?? "")
   });
   const parsed = submitSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
@@ -345,107 +333,26 @@ export async function submitMaterialAction(formData: FormData) {
   }
 
   const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
-  const accessTokenHash = contactParsed.data.accessToken
-    ? crypto.createHash("sha256").update(contactParsed.data.accessToken).digest("hex")
-    : null;
 
-  if (contactParsed.data.submissionId) {
-    if (!accessTokenHash) {
-      redirect(`/submit?error=invalid_form&field=form&message=${encodeURIComponent("Для доработки нужен ключ доступа к заявке")}`);
-    }
-
-    let updated: { count: number };
-    try {
-      updated = await prisma.submission.updateMany({
-        where: {
-          id: contactParsed.data.submissionId,
-          contactEmail: normalizedEmail,
-          accessTokenHash
-        },
-        data: {
-          payloadJson: parsed.data,
-          contactName: contactParsed.data.contactName,
-          status: ModerationStatus.pending,
-          moderatorComment: null,
-          updatedAt: new Date()
-        }
-      });
-    } catch (error) {
-      if (!isAccessTokenHashColumnMissingError(error)) {
-        throw error;
-      }
-
-      updated = await prisma.submission.updateMany({
-        where: {
-          id: contactParsed.data.submissionId,
-          contactEmail: normalizedEmail
-        },
-        data: {
-          payloadJson: parsed.data,
-          contactName: contactParsed.data.contactName,
-          status: ModerationStatus.pending,
-          moderatorComment: null,
-          updatedAt: new Date()
-        }
-      });
-    }
-
-    if (updated.count === 0) {
-      redirect(`/submit?error=invalid_form&field=form&message=${encodeURIComponent("Нельзя редактировать эту заявку")}`);
-    }
-  } else {
-    const rawAccessToken = crypto.randomBytes(24).toString("hex");
-    const createdAccessTokenHash = crypto.createHash("sha256").update(rawAccessToken).digest("hex");
-
-    let createdSubmission: { id: string };
-    try {
-      createdSubmission = await prisma.submission.create({
-        data: {
-          authorId: null,
-          contactName: contactParsed.data.contactName,
-          contactEmail: normalizedEmail,
-          accessTokenHash: createdAccessTokenHash,
-          payloadJson: parsed.data,
-          submissionType: SubmissionType.create,
-          targetEntityType: parsed.data.targetEntityType as EntityType,
-          status: ModerationStatus.pending
-        },
-        select: { id: true }
-      });
-    } catch (error) {
-      if (!isAccessTokenHashColumnMissingError(error)) {
-        throw error;
-      }
-
-      createdSubmission = await prisma.submission.create({
-        data: {
-          authorId: null,
-          contactName: contactParsed.data.contactName,
-          contactEmail: normalizedEmail,
-          payloadJson: parsed.data,
-          submissionType: SubmissionType.create,
-          targetEntityType: parsed.data.targetEntityType as EntityType,
-          status: ModerationStatus.pending
-        },
-        select: { id: true }
-      });
-    }
-
-    const successParams = new URLSearchParams({
-      success: "submitted",
-      submissionId: createdSubmission.id,
-      accessToken: rawAccessToken
-    });
-    redirect(`/submit?${successParams.toString()}`);
-  }
+  await prisma.submission.create({
+    data: {
+      authorId: null,
+      contactName: contactParsed.data.contactName,
+      contactEmail: normalizedEmail,
+      payloadJson: parsed.data,
+      submissionType: SubmissionType.create,
+      targetEntityType: parsed.data.targetEntityType as EntityType,
+      status: ModerationStatus.pending
+    },
+    select: { id: true }
+  });
 
   revalidatePath("/submission-status");
   revalidatePath("/admin");
 
   const successParams = new URLSearchParams({
     success: "submitted",
-    submissionId: contactParsed.data.submissionId || "",
-    accessToken: contactParsed.data.accessToken || ""
+    contactEmail: normalizedEmail
   });
   redirect(`/submit?${successParams.toString()}`);
 }
