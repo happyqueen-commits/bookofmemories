@@ -65,6 +65,7 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
   const [entityType] = useState<EntityType>("Person");
   const errorField = searchParams.get("field");
   const errorMessage = searchParams.get("message");
+  const errorLine = searchParams.get("line");
   const isInvalidForm = searchParams.get("error") === "invalid_form";
   const isSubmitted = searchParams.get("success") === "submitted";
 
@@ -136,6 +137,14 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
   const getInputClass = (fieldName: string) =>
     `${baseInputClass} ${errorField === fieldName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`;
 
+  const getFieldErrorText = (fieldName: string) => {
+    if (!isInvalidForm || errorField !== fieldName) return null;
+    if (fieldName === "photoUrls" && errorLine) {
+      return `Ошибка в строке ${errorLine}: ${errorMessage ?? "Проверьте ссылку."}`;
+    }
+    return errorMessage ?? "Проверьте это поле.";
+  };
+
   const description = useMemo(() => {
     if (entityType === "Person") return 'Данные о персоне для раздела "Книга памяти".';
     return "";
@@ -145,8 +154,9 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
     <form action={submitMaterialAction} className="space-y-4 rounded border border-slate-300 bg-white p-4">
       {isInvalidForm && (
         <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {errorMessage ?? "Проверьте форму."}
-          {errorField && fieldLabels[errorField] ? ` Поле: ${fieldLabels[errorField]}.` : ""}
+          {errorField && fieldLabels[errorField] ? `Проверьте поле «${fieldLabels[errorField]}».` : "Проверьте форму."}
+          {errorField === "photoUrls" && errorLine ? ` Ошибка в строке ${errorLine}.` : ""}
+          {errorMessage ? ` ${errorMessage}` : ""}
         </p>
       )}
       {isSubmitted ? (
@@ -162,25 +172,62 @@ export function TypedSubmitForm({ editableSubmission }: TypedSubmitFormProps) {
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
         <p className="text-sm font-medium text-slate-800">Контакты для связи по заявке</p>
-        <label className="block">Ваше имя <span className="text-slate-500">(обязательно)</span><input name="contactName" className={getInputClass("contactName")} value={draft.contactName} onChange={(event) => setDraft((prev) => ({ ...prev, contactName: event.target.value }))} required /></label>
-        <label className="block">Email для связи <span className="text-slate-500">(обязательно)</span><input name="contactEmail" type="email" className={getInputClass("contactEmail")} value={draft.contactEmail} onChange={(event) => setDraft((prev) => ({ ...prev, contactEmail: event.target.value }))} required /></label>
+        <label className="block">
+          Ваше имя <span className="text-slate-500">(обязательно)</span>
+          <input name="contactName" className={getInputClass("contactName")} value={draft.contactName} onChange={(event) => setDraft((prev) => ({ ...prev, contactName: event.target.value }))} placeholder="Например: Анна Петрова" required />
+          {getFieldErrorText("contactName") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("contactName")}</span> : null}
+        </label>
+        <label className="block">
+          Email для связи <span className="text-slate-500">(обязательно)</span>
+          <input name="contactEmail" type="email" className={getInputClass("contactEmail")} value={draft.contactEmail} onChange={(event) => setDraft((prev) => ({ ...prev, contactEmail: event.target.value }))} placeholder="Например: author@example.com" required />
+          {getFieldErrorText("contactEmail") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("contactEmail")}</span> : null}
+        </label>
       </div>
 
       <div className="space-y-3">
-        <label className="block">ФИО <span className="text-slate-500">(обязательно)</span><input name="fullName" className={getInputClass("fullName")} value={draft.fullName} onChange={(event) => setDraft((prev) => ({ ...prev, fullName: event.target.value }))} required /></label>
-        <label className="block">Биография <span className="text-slate-500">(обязательно)</span><textarea name="biography" className={getInputClass("biography")} rows={6} value={draft.biography} onChange={(event) => setDraft((prev) => ({ ...prev, biography: event.target.value }))} required /></label>
+        <label className="block">
+          ФИО <span className="text-slate-500">(обязательно)</span>
+          <input name="fullName" className={getInputClass("fullName")} value={draft.fullName} onChange={(event) => setDraft((prev) => ({ ...prev, fullName: event.target.value }))} placeholder="Например: Иванов Иван Иванович" required />
+          {getFieldErrorText("fullName") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("fullName")}</span> : null}
+        </label>
+        <label className="block">
+          Биография <span className="text-slate-500">(обязательно)</span>
+          <textarea name="biography" className={getInputClass("biography")} rows={6} value={draft.biography} onChange={(event) => setDraft((prev) => ({ ...prev, biography: event.target.value }))} placeholder="Например: Окончил МГТУ в 1985 году, работал на кафедре вычислительной техники, участвовал в научных проектах..." required />
+          {getFieldErrorText("biography") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("biography")}</span> : null}
+        </label>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="block">Дата рождения <span className="text-slate-500">(необязательно)</span><input name="birthDate" type="date" className={getInputClass("birthDate")} value={draft.birthDate} onChange={(event) => setDraft((prev) => ({ ...prev, birthDate: event.target.value }))} /></label>
-          <label className="block">Дата смерти <span className="text-slate-500">(необязательно)</span><input name="deathDate" type="date" className={getInputClass("deathDate")} value={draft.deathDate} onChange={(event) => setDraft((prev) => ({ ...prev, deathDate: event.target.value }))} /></label>
+          <label className="block">
+            Дата рождения <span className="text-slate-500">(необязательно)</span>
+            <input name="birthDate" type="date" className={getInputClass("birthDate")} value={draft.birthDate} onChange={(event) => setDraft((prev) => ({ ...prev, birthDate: event.target.value }))} />
+            {getFieldErrorText("birthDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("birthDate")}</span> : null}
+          </label>
+          <label className="block">
+            Дата смерти <span className="text-slate-500">(необязательно)</span>
+            <input name="deathDate" type="date" className={getInputClass("deathDate")} value={draft.deathDate} onChange={(event) => setDraft((prev) => ({ ...prev, deathDate: event.target.value }))} />
+            {getFieldErrorText("deathDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("deathDate")}</span> : null}
+          </label>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="block">Факультет <span className="text-slate-500">(необязательно)</span><input name="faculty" className={getInputClass("faculty")} value={draft.faculty} onChange={(event) => setDraft((prev) => ({ ...prev, faculty: event.target.value }))} /></label>
-          <label className="block">Кафедра <span className="text-slate-500">(необязательно)</span><input name="department" className={getInputClass("department")} value={draft.department} onChange={(event) => setDraft((prev) => ({ ...prev, department: event.target.value }))} /></label>
+          <label className="block">
+            Факультет <span className="text-slate-500">(необязательно)</span>
+            <input name="faculty" className={getInputClass("faculty")} value={draft.faculty} onChange={(event) => setDraft((prev) => ({ ...prev, faculty: event.target.value }))} placeholder="Например: Факультет информатики и систем управления" />
+            {getFieldErrorText("faculty") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("faculty")}</span> : null}
+          </label>
+          <label className="block">
+            Кафедра <span className="text-slate-500">(необязательно)</span>
+            <input name="department" className={getInputClass("department")} value={draft.department} onChange={(event) => setDraft((prev) => ({ ...prev, department: event.target.value }))} placeholder="Например: Кафедра программного обеспечения" />
+            {getFieldErrorText("department") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("department")}</span> : null}
+          </label>
         </div>
-        <label className="block">Краткое описание <span className="text-slate-500">(необязательно)</span><input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} /></label>
+        <label className="block">
+          Краткое описание <span className="text-slate-500">(необязательно)</span>
+          <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: Профессор кафедры, автор учебников по вычислительной математике" />
+          {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
+        </label>
         <label className="block">
           Фото (URL, каждая ссылка с новой строки) <span className="text-slate-500">(необязательно)</span>
-          <textarea name="photoUrls" className={getInputClass("photoUrls")} rows={4} value={draft.photoUrls} onChange={(event) => setDraft((prev) => ({ ...prev, photoUrls: event.target.value }))} placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg" />
+          <textarea name="photoUrls" className={getInputClass("photoUrls")} rows={4} value={draft.photoUrls} onChange={(event) => setDraft((prev) => ({ ...prev, photoUrls: event.target.value }))} placeholder="https://example.com/memories/ivanov-portrait.jpg&#10;https://example.com/memories/ivanov-lecture-1989.jpg" />
+          {getFieldErrorText("photoUrls") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("photoUrls")}</span> : null}
         </label>
       </div>
 
