@@ -29,9 +29,7 @@ export function TypedSubmitForm() {
   const searchParams = useSearchParams();
   const initialEntityType = searchParams.get("targetEntityType");
   const [entityType, setEntityType] = useState<EntityType>(
-    initialEntityType === "Person" || initialEntityType === "ChronicleEvent"
-      ? initialEntityType
-      : "Person"
+    initialEntityType === "Person" ? initialEntityType : "Person"
   );
   const errorField = searchParams.get("field");
   const errorMessage = searchParams.get("message");
@@ -67,7 +65,7 @@ export function TypedSubmitForm() {
 
   const description = useMemo(() => {
     if (entityType === "Person") return "Данные о персоне для раздела \"Книга памяти\".";
-    return "Событие для раздела хроники с датой и описанием.";
+    return "";
   }, [entityType]);
 
   return (
@@ -95,7 +93,9 @@ export function TypedSubmitForm() {
         </select>
       </label>
 
-      <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
+      {description && (
+        <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
+      )}
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
         <p className="text-sm font-medium text-slate-800">Контакты для связи по заявке</p>
@@ -116,16 +116,6 @@ export function TypedSubmitForm() {
             <label className="block">Кафедра <span className="text-slate-500">(необязательно)</span><input name="department" className={getInputClass("department")} defaultValue={getPrefillValue("department")} /></label>
           </div>
           <label className="block">Краткое описание <span className="text-slate-500">(необязательно)</span><input name="shortDescription" className={getInputClass("shortDescription")} defaultValue={getPrefillValue("shortDescription")} /></label>
-        </div>
-      )}
-
-      {entityType === "ChronicleEvent" && (
-        <div className="space-y-3">
-          <label className="block">Заголовок <span className="text-slate-500">(обязательно)</span><input name="title" className={getInputClass("title")} defaultValue={getPrefillValue("title")} required /></label>
-          <label className="block">Краткая сводка <span className="text-slate-500">(обязательно)</span><textarea name="summary" className={getInputClass("summary")} rows={3} defaultValue={getPrefillValue("summary")} required /></label>
-          <label className="block">Подробное описание <span className="text-slate-500">(обязательно)</span><textarea name="content" className={getInputClass("content")} rows={8} defaultValue={getPrefillValue("content")} required /></label>
-          <label className="block">Дата события <span className="text-slate-500">(обязательно)</span><input name="eventDate" type="date" className={getInputClass("eventDate")} defaultValue={getPrefillValue("eventDate")} required /></label>
-          <label className="block">Обложка (URL) <span className="text-slate-500">(необязательно)</span><input name="coverImageUrl" type="url" className={getInputClass("coverImageUrl")} defaultValue={getPrefillValue("coverImageUrl")} placeholder="https://..." /></label>
         </div>
       )}
 
