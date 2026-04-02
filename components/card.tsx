@@ -25,20 +25,20 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
   return (
     <Link
       href={href}
-      className="interactive-lift motion-slide-in group block h-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+      className="interactive-lift motion-slide-in group block h-full rounded-sm border border-[#cfbea0] bg-[#fffdf7] p-4 shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c2f24] focus-visible:ring-offset-2"
     >
       <article className="flex h-full flex-col gap-3">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
-            className="h-52 w-full rounded-lg object-cover"
+            className="h-52 w-full rounded-sm object-cover"
             loading="lazy"
           />
         ) : null}
         <div>
-          <h3 className="card-title break-words text-slate-900">{title}</h3>
-          {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+          <h3 className="card-title break-words text-[#3d2d1f]">{title}</h3>
+          {subtitle ? <p className="mt-1 text-sm text-[#77624d]">{subtitle}</p> : null}
         </div>
         <p className="body-muted flex-1 [overflow-wrap:anywhere]">{safeText}</p>
       </article>
