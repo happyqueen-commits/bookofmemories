@@ -21,11 +21,11 @@ function isActivePath(pathname: string, href: string) {
 
 function getLinkClasses(active: boolean) {
   return [
-    "rounded-md px-3 py-2 font-medium no-underline transition-colors duration-200",
+    "rounded-sm px-3 py-2 text-sm font-semibold no-underline transition-colors duration-200",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     active
-      ? "bg-slate-800 text-white hover:bg-slate-900 focus-visible:outline-slate-800"
-      : "text-slate-700 hover:bg-slate-200 hover:text-slate-900 active:bg-slate-300"
+      ? "bg-accent text-[#fff8ee] hover:bg-[#74261d]"
+      : "text-[#5c4a35] hover:bg-[#e7d9c0] hover:text-[#3f2f20]"
   ].join(" ");
 }
 
@@ -40,7 +40,7 @@ export function NavLinksClient({ publicLinks, isAdmin }: NavLinksClientProps) {
 
   return (
     <>
-      <nav aria-label="Основная навигация" className="hidden items-center gap-2 text-sm md:flex">
+      <nav aria-label="Основная навигация" className="hidden flex-wrap items-center gap-2 md:flex">
         {links.map(([href, label]) => (
           <Link key={href} href={href} aria-current={isActivePath(pathname, href) ? "page" : undefined} className={getLinkClasses(isActivePath(pathname, href))}>
             {label}
@@ -54,14 +54,14 @@ export function NavLinksClient({ publicLinks, isAdmin }: NavLinksClientProps) {
           aria-expanded={isOpen}
           aria-controls="mobile-navigation"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="ml-auto flex min-h-11 w-fit items-center gap-2 rounded-md border border-slate-400 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition-colors duration-200 hover:bg-slate-100 active:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="ml-auto flex min-h-11 w-fit items-center gap-2 rounded-sm border border-[#b69b74] bg-[#f9f2e4] px-4 py-2 text-sm font-semibold text-[#3d2f1f] shadow-sm transition-colors duration-200 hover:bg-[#efe2cb] active:bg-[#e3d2b1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <span aria-hidden="true" className="text-base leading-none">{isOpen ? "✕" : "☰"}</span>
-          <span>{isOpen ? "Закрыть" : "Меню"}</span>
+          <span>{isOpen ? "Закрыть" : "Разделы"}</span>
         </button>
 
         <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${isOpen ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-          <nav id="mobile-navigation" aria-label="Мобильная навигация" className="overflow-hidden rounded-lg border border-slate-300 bg-white/95 text-sm shadow-lg backdrop-blur">
+          <nav id="mobile-navigation" aria-label="Мобильная навигация" className="overflow-hidden rounded-sm border border-[#c9b08c] bg-[#fcf8ee] text-sm shadow-panel">
             <ul className="flex flex-col p-2">
               {links.map(([href, label]) => (
                 <li key={href}>

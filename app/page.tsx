@@ -8,34 +8,38 @@ export default async function Home() {
 
   return (
     <div className="space-y-rhythm">
-      <section className="rounded border border-slate-300 bg-white p-section-pad">
-        <span className="inline-flex rounded-full border border-slate-300 bg-tint-lavender px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-          Цифровой мемориал
-        </span>
-        <div className="mt-4 h-px w-28 bg-gradient-to-r from-accent/80 to-slate-300" />
-        <h1 className="mt-5 display-title">Книга памяти: Жизнь Финансового университета во времена СВО</h1>
-        <p className="mt-3 text-slate-700">Архивный цифровой мемориал с обязательной модерацией каждого материала.</p>
-        <div className="mt-4"><SearchForm placeholder="Искать по всем разделам" /></div>
-      </section>
-
-      <section className="section-reveal rounded border border-slate-200 bg-tint-lavender p-section-pad">
-        <h2 className="section-title mb-3">Избранные карточки</h2>
-        <div className="grid items-stretch gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
-      </section>
-
-      <section className="section-reveal reveal-delay-3 rounded border border-slate-300 bg-white p-section-pad">
-        <div className="grid gap-3">
-          <div className="rounded-lg border border-slate-200 bg-tint-lavender p-4">
-            <p className="text-3xl font-bold leading-none text-accent">{stats}</p>
-            <p className="mt-2 text-sm text-slate-600">Персон</p>
-          </div>
+      <section className="rounded-sm border-2 border-borderWarm bg-section-cream p-section-pad shadow-panel">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#866540]">Поиск документов об участниках</p>
+        <h1 className="mt-3 display-title max-w-4xl text-[#3f2e1f]">Книга памяти: Жизнь Финансового университета во времена СВО</h1>
+        <p className="mt-3 max-w-3xl text-[#5d4732]">Уточняйте имя и факты о человеке, чтобы быстрее перейти в карточку и ознакомиться с подтвержденными материалами архива.</p>
+        <div className="mt-6 rounded-sm border border-[#ccb18b] bg-[#fefbf1] p-4">
+          <SearchForm placeholder="Фамилия, имя, подразделение или событие" />
         </div>
       </section>
 
-      <section className="section-reveal reveal-delay-4 rounded border border-slate-200 bg-tint-sky p-section-pad">
-        <h2 className="subsection-title">Как работает модерация</h2>
-        <p className="mt-2 text-slate-700">Каждый материал проходит проверку модератором: pending → needs_revision / approved / rejected. Публикация происходит только после статуса approved.</p>
-        <Link className="interactive-lift mt-3 inline-block rounded px-1 py-0.5 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2" href="/submit">Подать материал</Link>
+      <section className="section-reveal rounded-sm border border-[#d5c5a6] bg-section-sand p-section-pad">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="section-title text-[#483520]">О возможностях портала</h2>
+          <Link href="/about" className="text-sm font-semibold text-accent">Подробнее</Link>
+        </div>
+        <ul className="mt-4 grid gap-2 text-[#5a4731] md:grid-cols-3">
+          <li className="rounded-sm border border-[#dac8ab] bg-[#f6ecda] px-4 py-3">Поиск информации о человеке и его жизненном пути.</li>
+          <li className="rounded-sm border border-[#dac8ab] bg-[#f6ecda] px-4 py-3">Публикация и хранение подтвержденных историй.</li>
+          <li className="rounded-sm border border-[#dac8ab] bg-[#f6ecda] px-4 py-3">Строгая модерация перед выводом в открытый доступ.</li>
+        </ul>
+      </section>
+
+      <section className="section-reveal reveal-delay-2 rounded-sm border border-[#c9b799] bg-white p-section-pad">
+        <h2 className="section-title mb-3 text-[#483520]">Избранные карточки</h2>
+        <div className="grid items-stretch gap-4 md:grid-cols-3">{featuredPersons.map((p) => <Card key={p.id} title={p.fullName} text={p.shortDescription} href={`/memory/${p.slug}`} />)}</div>
+      </section>
+
+      <section className="section-reveal reveal-delay-3 rounded-sm border border-[#b8c0ae] bg-section-olive p-section-pad">
+        <h2 className="subsection-title text-[#39412f]">Новые материалы</h2>
+        <div className="mt-3 inline-flex rounded-sm border border-[#879170] bg-[#f8faee] px-5 py-3">
+          <p className="text-3xl font-bold leading-none text-[#566046]">{stats}</p>
+          <p className="ml-3 pt-2 text-sm text-[#556146]">персон в опубликованной книге памяти</p>
+        </div>
       </section>
     </div>
   );
