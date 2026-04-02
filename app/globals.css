@@ -38,7 +38,7 @@ a {
 }
 
 .container-arch {
-  @apply w-full px-4 md:px-6;
+  @apply mx-auto max-w-6xl px-4;
 }
 
 @keyframes fade-in-soft {
