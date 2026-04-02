@@ -146,6 +146,7 @@ model Submission {
   submissionType   SubmissionType
   targetEntityType EntityType
   targetEntityId   String?
+  accessTokenHash  String?
   payloadJson      Json
   status           ModerationStatus @default(pending)
   moderatorComment String?
@@ -160,6 +161,7 @@ model Submission {
   moderator        User?            @relation("ModeratorSubmissions", fields: [moderatorId], references: [id])
 
   @@index([contactEmail])
+  @@index([accessTokenHash])
 }
 
 

@@ -1,31 +1,35 @@
 import Link from "next/link";
+import crypto from "node:crypto";
 import { TypedSubmitForm } from "./typed-submit-form";
 import { prisma } from "@/lib/prisma";
 
 type SubmitPageProps = {
-  searchParams?: Promise<{ error?: string; success?: string; contactEmail?: string; submissionId?: string }>;
+  searchParams?: Promise<{ error?: string; success?: string; submissionId?: string; accessToken?: string }>;
 };
 
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const params = (await searchParams) ?? {};
   const hasValidationError = params.error === "invalid_form";
   const hasSubmittedSuccess = params.success === "submitted";
-  const submittedEmail = params.contactEmail;
+  const submittedSubmissionId = params.submissionId;
+  const submittedAccessToken = params.accessToken;
 
   let editableSubmission:
     | {
         id: string;
         contactEmail: string;
         contactName: string;
+        accessToken: string;
         payload: Record<string, unknown>;
       }
     | undefined;
 
-  if (params.submissionId && submittedEmail) {
+  if (params.submissionId && params.accessToken) {
+    const accessTokenHash = crypto.createHash("sha256").update(params.accessToken).digest("hex");
     const submission = await prisma.submission.findFirst({
       where: {
         id: params.submissionId,
-        contactEmail: submittedEmail.toLowerCase(),
+        accessTokenHash,
         status: { in: ["needs_revision", "rejected"] }
       }
     });
@@ -35,6 +39,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
         id: submission.id,
         contactEmail: submission.contactEmail,
         contactName: submission.contactName,
+        accessToken: params.accessToken,
         payload: (submission.payloadJson as Record<string, unknown>) ?? {}
       };
     }
@@ -53,9 +58,17 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
           <p>Материал отправлен на модерацию. После проверки он появится в соответствующем разделе.</p>
           <p className="mt-1">
             Проверить статус можно на странице{" "}
-            <Link href={submittedEmail ? `/submission-status?email=${encodeURIComponent(submittedEmail)}` : "/submission-status"} className="underline">
+            <Link
+              href={submittedSubmissionId && submittedAccessToken
+                ? `/submission-status?submissionId=${encodeURIComponent(submittedSubmissionId)}&accessToken=${encodeURIComponent(submittedAccessToken)}`
+                : "/submission-status"}
+              className="underline"
+            >
               статуса заявок
             </Link>.
+          </p>
+          <p className="mt-1">
+            Сохраните ссылку со страницы статуса: по ней можно проверять и дорабатывать заявку без регистрации.
           </p>
         </div>
       )}
