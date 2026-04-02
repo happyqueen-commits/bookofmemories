@@ -29,14 +29,6 @@ const optionalDate = z.preprocess((value) => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }, z.date().optional());
 
-const optionalStringArrayFromLines = z.preprocess((value) => {
-  if (typeof value !== "string") return [];
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}, z.array(z.string().url()).default([]));
-
 const personSchema = z.object({
   targetEntityType: z.literal("Person"),
   fullName: z.string().trim().min(2),
@@ -45,8 +37,7 @@ const personSchema = z.object({
   birthDate: optionalDate,
   deathDate: optionalDate,
   faculty: optionalTrimmedString,
-  department: optionalTrimmedString,
-  photoUrls: optionalStringArrayFromLines
+  department: optionalTrimmedString
 });
 
 const storySchema = z.object({
@@ -65,8 +56,7 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
 
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
-  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи."),
-  submissionId: z.string().cuid().optional().or(z.literal(""))
+  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
 });
 
 const moderateSchema = z.object({
@@ -238,8 +228,7 @@ export async function logoutAction() {
 export async function submitMaterialAction(formData: FormData) {
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
-    contactEmail: formData.get("contactEmail"),
-    submissionId: formData.get("submissionId")
+    contactEmail: formData.get("contactEmail")
   });
   const parsed = submitSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
@@ -260,8 +249,7 @@ export async function submitMaterialAction(formData: FormData) {
     storyType: formData.get("storyType"),
     excerpt: formData.get("excerpt"),
     content: formData.get("content"),
-    coverImageUrl: formData.get("coverImageUrl"),
-    photoUrls: formData.get("photoUrls")
+    coverImageUrl: formData.get("coverImageUrl")
   });
 
   if (!parsed.success || !contactParsed.success) {
@@ -276,58 +264,29 @@ export async function submitMaterialAction(formData: FormData) {
     const params = new URLSearchParams({
       error: "invalid_form",
       field,
-      message,
-      contactName: String(formData.get("contactName") ?? ""),
-      contactEmail: String(formData.get("contactEmail") ?? ""),
-      fullName: String(formData.get("fullName") ?? ""),
-      biography: String(formData.get("biography") ?? ""),
-      birthDate: String(formData.get("birthDate") ?? ""),
-      deathDate: String(formData.get("deathDate") ?? ""),
-      faculty: String(formData.get("faculty") ?? ""),
-      department: String(formData.get("department") ?? ""),
-      shortDescription: String(formData.get("shortDescription") ?? ""),
-      photoUrls: String(formData.get("photoUrls") ?? "")
+      message
     });
     redirect(`/submit?${params.toString()}`);
   }
 
-  const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
-
-  if (contactParsed.data.submissionId) {
-    const updated = await prisma.submission.updateMany({
-      where: { id: contactParsed.data.submissionId, contactEmail: normalizedEmail },
-      data: {
-        payloadJson: parsed.data,
-        contactName: contactParsed.data.contactName,
-        status: ModerationStatus.pending,
-        moderatorComment: null,
-        updatedAt: new Date()
-      }
-    });
-
-    if (updated.count === 0) {
-      redirect(`/submit?error=invalid_form&field=form&message=${encodeURIComponent("Нельзя редактировать эту заявку")}`);
+  await prisma.submission.create({
+    data: {
+      authorId: null,
+      contactName: contactParsed.data.contactName,
+      contactEmail: contactParsed.data.contactEmail.toLowerCase(),
+      payloadJson: parsed.data,
+      submissionType: SubmissionType.create,
+      targetEntityType: parsed.data.targetEntityType as EntityType,
+      status: ModerationStatus.pending
     }
-  } else {
-    await prisma.submission.create({
-      data: {
-        authorId: null,
-        contactName: contactParsed.data.contactName,
-        contactEmail: normalizedEmail,
-        payloadJson: parsed.data,
-        submissionType: SubmissionType.create,
-        targetEntityType: parsed.data.targetEntityType as EntityType,
-        status: ModerationStatus.pending
-      }
-    });
-  }
+  });
 
   revalidatePath("/submission-status");
   revalidatePath("/admin");
 
   const successParams = new URLSearchParams({
     success: "submitted",
-    contactEmail: normalizedEmail
+    contactEmail: contactParsed.data.contactEmail.toLowerCase()
   });
   redirect(`/submit?${successParams.toString()}`);
 }
@@ -402,9 +361,7 @@ export async function moderateSubmissionAction(formData: FormData) {
           birthDate: payload.birthDate,
           deathDate: payload.deathDate,
           faculty: payload.faculty,
-          department: payload.department,
-          photoUrl: payload.photoUrls[0] ?? null,
-          photoUrls: payload.photoUrls
+          department: payload.department
         }
       });
 

@@ -60,16 +60,6 @@ export default async function SubmissionStatusPage({
               </p>
               <p className="text-xs text-slate-500">Обновлено: {submission.updatedAt.toLocaleString("ru-RU")}</p>
               {submission.moderatorComment ? <p className="mt-2 text-sm">Комментарий модератора: {submission.moderatorComment}</p> : null}
-              {submission.status === "needs_revision" || submission.status === "rejected" ? (
-                <p className="mt-2 text-sm">
-                  <Link
-                    href={`/submit?submissionId=${submission.id}&contactEmail=${encodeURIComponent(email)}`}
-                    className="underline"
-                  >
-                    Открыть материал для доработки
-                  </Link>
-                </p>
-              ) : null}
             </article>
           ))}
         </div>
