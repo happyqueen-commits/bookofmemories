@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Книга памяти",
+  title: "Книга участников",
   description: "Жизнь Финансового университета во времена СВО"
 };
 

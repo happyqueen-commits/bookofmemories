@@ -1,7 +1,7 @@
 import { EntityType, SubmissionType } from "@prisma/client";
 
 const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
-  [EntityType.Person]: "Персона (Книга памяти)",
+  [EntityType.Person]: "Персона (Книга участников)",
   [EntityType.ArchiveMaterial]: "Архивный материал",
   [EntityType.Story]: "История / интервью",
   [EntityType.ChronicleEvent]: "Событие хроники"

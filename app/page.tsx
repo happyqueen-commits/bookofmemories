@@ -10,7 +10,7 @@ export default async function Home() {
     <div className="space-y-rhythm">
       <section className="rounded-sm border-2 border-borderWarm bg-section-cream p-section-pad shadow-panel">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#866540]">Поиск документов об участниках</p>
-        <h1 className="mt-3 display-title max-w-4xl text-[#3f2e1f]">Книга памяти: Жизнь Финансового университета во времена СВО</h1>
+        <h1 className="mt-3 display-title max-w-4xl text-[#3f2e1f]">Книга участников: Жизнь Финансового университета во времена СВО</h1>
         <p className="mt-3 max-w-3xl text-[#5d4732]">Уточняйте имя и факты о человеке, чтобы быстрее перейти в карточку и ознакомиться с подтвержденными материалами архива.</p>
         <div className="mt-6 rounded-sm border border-[#ccb18b] bg-[#fefbf1] p-4">
           <SearchForm placeholder="Фамилия, имя, подразделение или событие" />
@@ -38,7 +38,7 @@ export default async function Home() {
         <h2 className="subsection-title text-[#39412f]">Новые материалы</h2>
         <div className="mt-3 inline-flex rounded-sm border border-[#879170] bg-[#f8faee] px-5 py-3">
           <p className="text-3xl font-bold leading-none text-[#566046]">{stats}</p>
-          <p className="ml-3 pt-2 text-sm text-[#556146]">персон в опубликованной книге памяти</p>
+          <p className="ml-3 pt-2 text-sm text-[#556146]">персон в опубликованной книге участников</p>
         </div>
       </section>
     </div>
