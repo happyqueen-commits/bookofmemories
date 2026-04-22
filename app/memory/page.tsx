@@ -24,7 +24,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
     <div className="space-y-5">
       <section className="rounded-sm border-2 border-borderWarm bg-section-cream p-5 shadow-panel">
         <h1 className="text-3xl font-semibold text-[#3d2d1f]">Участники и истории</h1>
-        <p className="mt-2 text-[#5b4631]">Используйте поиск по фамилии и имени, чтобы найти нужную карточку в книге памяти.</p>
+        <p className="mt-2 text-[#5b4631]">Используйте поиск по фамилии и имени, чтобы найти нужную карточку в книге участников.</p>
         <div className="mt-4 rounded-sm border border-[#ccb18b] bg-[#fefbf1] p-4">
           <SearchForm defaultValue={q ?? ""} placeholder="Поиск персон" />
         </div>

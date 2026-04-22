@@ -121,7 +121,7 @@ export function TypedSubmitForm() {
   };
 
   const description = useMemo(() => {
-    if (entityType === "Person") return 'Данные о персоне для раздела "Книга памяти".';
+    if (entityType === "Person") return 'Данные о персоне для раздела "Книга участников".';
     return "";
   }, [entityType]);
 
