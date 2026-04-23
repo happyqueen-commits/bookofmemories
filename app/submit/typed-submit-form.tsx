@@ -174,9 +174,10 @@ export function TypedSubmitForm() {
     if (!photoFile || uploadedPhotoUrl) return;
 
     event.preventDefault();
+    const form = event.currentTarget;
     const uploadedUrl = await uploadPhoto(photoFile);
     if (!uploadedUrl) return;
-    const uploadedPhotoField = event.currentTarget.elements.namedItem("uploadedPhotoUrl");
+    const uploadedPhotoField = form.elements.namedItem("uploadedPhotoUrl");
     if (uploadedPhotoField instanceof HTMLInputElement) {
       uploadedPhotoField.value = uploadedUrl;
     }
@@ -193,7 +194,7 @@ export function TypedSubmitForm() {
       }));
     }
 
-    event.currentTarget.requestSubmit();
+    form.requestSubmit();
   };
 
   return (
