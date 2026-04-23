@@ -302,7 +302,7 @@ export function TypedSubmitForm() {
             }}
           />
           <span className="mt-1 block text-xs text-slate-600">
-            Можно загружать фото любого разрешения — изображение подстроится на карточке автоматически. Для лучшего качества рекомендуем портретное фото от 800×1000 px.
+            Поддерживаются распространённые форматы изображений (JPG, PNG, WEBP и другие). Фото автоматически впишется в карточку без растягивания.
           </span>
           {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
         </label>

@@ -16,7 +16,9 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
 
   return (
     <div className="space-y-2">
-      <img src={photos[index]} alt={alt} className="h-72 w-full rounded-sm border border-[#cfbea0] object-cover" />
+      <div className="flex h-72 w-full items-center justify-center overflow-hidden rounded-sm border border-[#cfbea0] bg-[#f7f1e5]">
+        <img src={photos[index]} alt={alt} className="h-full w-full object-contain" />
+      </div>
       {hasMany ? (
         <div className="flex items-center justify-between rounded border border-[#cfbea0] bg-[#fffdf7] px-3 py-2 text-sm">
           <button type="button" onClick={prev} className="rounded border border-slate-300 px-3 py-1">
