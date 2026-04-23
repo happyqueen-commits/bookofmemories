@@ -182,7 +182,7 @@ export function TypedSubmitForm() {
       uploadedPhotoField.value = uploadedUrl;
     }
 
-    const currentUrls = draft.photoUrls
+    const currentUrls = (draft.photoUrls ?? "")
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
@@ -190,7 +190,7 @@ export function TypedSubmitForm() {
     if (!currentUrls.includes(uploadedUrl)) {
       setDraft((prev) => ({
         ...prev,
-        photoUrls: prev.photoUrls.trim() ? `${prev.photoUrls.trim()}\n${uploadedUrl}` : uploadedUrl
+        photoUrls: (prev.photoUrls ?? "").trim() ? `${(prev.photoUrls ?? "").trim()}\n${uploadedUrl}` : uploadedUrl
       }));
     }
 
