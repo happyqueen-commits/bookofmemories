@@ -12,6 +12,7 @@ import { auth, signIn, signOut } from "@/lib/auth";
 import { getClientIpFromHeaders, getLoginRateLimitState } from "@/lib/login-rate-limit";
 import { passwordSchema } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
+import { deliverPasswordResetToken } from "@/lib/password-reset-delivery";
 
 const optionalTrimmedString = z.preprocess((value) => {
   if (typeof value !== "string") return undefined;
@@ -201,6 +202,8 @@ export async function registerAction(
   };
 }
 
+const FORGOT_PASSWORD_NEUTRAL_MESSAGE = "Если email зарегистрирован, инструкция отправлена";
+
 export async function forgotPasswordAction(
   _: ForgotPasswordActionState,
   formData: FormData
@@ -226,15 +229,16 @@ export async function forgotPasswordAction(
       }
     });
 
-    return {
-      status: "success",
-      message: `Инструкция отправлена. Тестовый токен (для dev): ${rawToken}`
-    };
+    try {
+      await deliverPasswordResetToken(email, rawToken);
+    } catch (error) {
+      console.error("[password-reset] Failed to deliver reset token", error);
+    }
   }
 
   return {
     status: "success",
-    message: "Если такой email зарегистрирован, инструкция по сбросу уже отправлена."
+    message: FORGOT_PASSWORD_NEUTRAL_MESSAGE
   };
 }
 
