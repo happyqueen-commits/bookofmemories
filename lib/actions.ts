@@ -370,6 +370,13 @@ export async function submitMaterialAction(formData: FormData) {
 }
 
 export async function moderateSubmissionAction(formData: FormData) {
+  /**
+   * Revalidate map after moderation:
+   * - /admin — moderation queue and statuses.
+   * - /memory — public people list (Person publications).
+   * - /stories — public stories list (Story publications).
+   * - / — public showcase (featured/statistics), always as fallback.
+   */
   const session = await auth();
   if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
     throw new Error("Недостаточно прав");
@@ -396,6 +403,8 @@ export async function moderateSubmissionAction(formData: FormData) {
   if (!existingSubmission) {
     throw new Error("Заявка не найдена.");
   }
+
+  let publishedTargetEntityType: EntityType | null = null;
 
   await prisma.$transaction(async (tx) => {
     const submission = await tx.submission.update({
@@ -465,6 +474,7 @@ export async function moderateSubmissionAction(formData: FormData) {
     }
 
     if (createdEntityId) {
+      publishedTargetEntityType = payload.targetEntityType;
       await tx.submission.update({
         where: { id: submission.id },
         data: { targetEntityId: createdEntityId }
@@ -473,5 +483,11 @@ export async function moderateSubmissionAction(formData: FormData) {
   });
 
   revalidatePath("/admin");
-  revalidatePath("/memory");
+  if (publishedTargetEntityType === EntityType.Person) {
+    revalidatePath("/memory");
+  }
+  if (publishedTargetEntityType === EntityType.Story) {
+    revalidatePath("/stories");
+  }
+  revalidatePath("/");
 }
