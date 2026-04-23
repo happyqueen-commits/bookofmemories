@@ -27,8 +27,7 @@
 
 body {
   @apply bg-paper text-ink;
-  background-image: linear-gradient(cover, #ece4d4 0, #f4f0e6 180px, #f4f0e6 100%);
-  background-size: cover;
+  background-image: linear-gradient(180deg, #ece2d0 0%, #f3eee2 180px, #f4f0e6 100%);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   font-size: var(--text-base);
   line-height: var(--leading-normal);
