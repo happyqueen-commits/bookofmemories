@@ -2,25 +2,26 @@ import Link from "next/link";
 import { TypedSubmitForm } from "./typed-submit-form";
 
 type SubmitPageProps = {
-  searchParams?: Promise<{ success?: string; contactEmail?: string }>;
+  searchParams?: Promise<{ success?: string; statusToken?: string }>;
 };
 
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const params = (await searchParams) ?? {};
-  const submittedEmail = (params.contactEmail ?? "").trim().toLowerCase();
+  const statusToken = (params.statusToken ?? "").trim();
+  const statusLink = statusToken ? `/submission-status?token=${encodeURIComponent(statusToken)}` : "";
 
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold">Добавить материал</h1>
       <TypedSubmitForm />
-      {submittedEmail ? (
+      {statusToken ? (
         <p className="mt-3 text-sm text-slate-600">
-          Проверить статус по email можно на странице{" "}
+          Для проверки статуса используйте персональную ссылку (сохраните ее в надежном месте):{" "}
           <Link
-            href={`/submission-status?email=${encodeURIComponent(submittedEmail)}`}
+            href={statusLink}
             className="underline"
           >
-            статуса заявок
+            открыть страницу статуса
           </Link>
           .
         </p>

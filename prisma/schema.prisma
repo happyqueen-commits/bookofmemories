@@ -147,6 +147,7 @@ model Submission {
   targetEntityType EntityType
   targetEntityId   String?
   accessTokenHash  String?
+  accessTokenExpiresAt DateTime?
   payloadJson      Json
   status           ModerationStatus @default(pending)
   moderatorComment String?
@@ -162,6 +163,7 @@ model Submission {
 
   @@index([contactEmail])
   @@index([accessTokenHash])
+  @@index([contactEmail, accessTokenHash])
 }
 
 
