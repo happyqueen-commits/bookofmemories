@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type CardProps = {
@@ -36,11 +37,12 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
       <article className="flex h-full flex-col">
         {imageUrl ? (
           <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
-            <img
+            <Image
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-cover object-center transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-              loading="lazy"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              className="object-cover object-center transition-transform duration-300 ease-out group-hover:scale-[1.02]"
             />
           </div>
         ) : (

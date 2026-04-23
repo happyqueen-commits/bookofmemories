@@ -16,7 +16,23 @@ function getBiographyExcerpt(biography: string, fallback: string) {
 export default async function MemoryPage({ searchParams }: { searchParams: { q?: string } }) {
   const q = searchParams.q?.trim();
   const items = await prisma.person.findMany({
-    where: { moderationStatus: ModerationStatus.approved, ...(q ? { fullName: { contains: q, mode: "insensitive" } } : {}) },
+    where: {
+      moderationStatus: ModerationStatus.approved,
+      ...(q
+        ? {
+            OR: [
+              { fullName: { contains: q, mode: "insensitive" } },
+              { shortDescription: { contains: q, mode: "insensitive" } },
+              { biography: { contains: q, mode: "insensitive" } },
+              { faculty: { contains: q, mode: "insensitive" } },
+              { department: { contains: q, mode: "insensitive" } },
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { middleName: { contains: q, mode: "insensitive" } }
+            ]
+          }
+        : {})
+    },
     orderBy: { publishedAt: "desc" }
   });
 
@@ -25,7 +41,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
       <section className="rounded-xl border border-borderWarm bg-gradient-to-b from-[#f8f1e5] to-[#f3e8d8] p-5 shadow-panel sm:p-6">
         <h1 className="text-3xl font-semibold text-[#3d2d1f]">Участники и истории</h1>
         <p className="mt-2 max-w-3xl text-[#5b4631]">
-          Используйте поиск по фамилии и имени, чтобы найти нужную карточку в книге участников.
+          Используйте поиск по имени, описанию, биографии, факультету или кафедре.
         </p>
         <div className="mt-4 rounded-xl border border-[#ccb18b] bg-[#fefcf4] p-3 sm:p-4">
           <SearchForm defaultValue={q ?? ""} placeholder="Поиск персон" />

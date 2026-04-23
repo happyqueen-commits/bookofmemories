@@ -1,9 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
-import { EntityType } from "@prisma/client";
 import { submitMaterialAction } from "@/lib/actions";
 
 const baseInputClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
@@ -52,7 +51,6 @@ function SubmitButton() {
 
 export function TypedSubmitForm() {
   const searchParams = useSearchParams();
-  const [entityType] = useState<EntityType>("Person");
   const errorField = searchParams.get("field");
   const errorMessage = searchParams.get("message");
   const errorLine = searchParams.get("line");
@@ -130,10 +128,7 @@ export function TypedSubmitForm() {
     return errorMessage ?? "Проверьте это поле.";
   };
 
-  const description = useMemo(() => {
-    if (entityType === "Person") return 'Данные о персоне для раздела "Книга участников". В этом MVP форма работает для Person.';
-    return "";
-  }, [entityType]);
+  const description = `Данные о персоне для раздела "Книга участников". В этом MVP форма работает только для Person.`;
 
   const uploadPhoto = async (file: File) => {
     setIsUploadingPhoto(true);
@@ -216,6 +211,7 @@ export function TypedSubmitForm() {
       <input type="hidden" name="targetEntityType" value="Person" />
       <input type="hidden" name="uploadedPhotoUrl" value={uploadedPhotoUrl} />
       <input type="hidden" name="photoUrls" value={draft.photoUrls} />
+      <input type="text" name="website" autoComplete="off" tabIndex={-1} aria-hidden="true" className="hidden" />
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">

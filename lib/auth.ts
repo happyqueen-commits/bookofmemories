@@ -10,6 +10,7 @@ import {
   recordFailedLoginAttempt
 } from "@/lib/login-rate-limit";
 import { prisma } from "@/lib/prisma";
+import { getAuthSecret } from "@/lib/env";
 
 class LoginRejectedError extends CredentialsSignin {
   constructor(code: "invalid_input" | "invalid_credentials" | "too_many_attempts") {
@@ -24,7 +25,10 @@ const credentialsSchema = z.object({
   ip: z.string().optional()
 });
 
+const authSecret = getAuthSecret();
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: authSecret,
   session: { strategy: "jwt" },
   pages: { signIn: "/account" },
   providers: [

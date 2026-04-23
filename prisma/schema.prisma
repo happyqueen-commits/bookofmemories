@@ -167,6 +167,20 @@ model Submission {
 }
 
 
+model PublicRateLimit {
+  key       String   @id
+  ip        String
+  action    String
+  windowKey String
+  count     Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ip, action])
+  @@index([expiresAt])
+}
+
 model LoginAttempt {
   key             String   @id
   email           String

@@ -1,99 +1,140 @@
-# Книга участников — MVP
+# Book of Memories (MVP)
 
-MVP информационного мемориально-архивного сайта «Книга участников: Жизнь Финансового университета во времена СВО».
+Мемориально-архивный проект на Next.js + Prisma. Текущий MVP сфокусирован на **персонах** (Person): публичный каталог, карточка участника, публичная отправка материалов, модерация и админ-аутентификация.
 
-## Стек
-- Next.js 14 App Router
-- TypeScript + React + Tailwind
-- PostgreSQL + Prisma
-- Auth.js (NextAuth Credentials)
-- Zod
+## Что реализовано
 
-## Быстрый старт
+- Публичные страницы: `/`, `/about`, `/memory`, `/memory/[slug]`, `/submit`, `/submission-status`.
+- Каталог участников и карточки с фото.
+- Публичная форма отправки материалов с модерацией.
+- Upload изображений через `/api/upload`.
+- Админ-аутентификация (только `MODERATOR`/`ADMIN`).
+- Панель модерации `/admin`.
+- Восстановление пароля: `/account/forgot-password` → `/account/reset-password?token=...`.
+
+## MVP-ограничения
+
+- Поток отправки/автопубликации приведён к честному состоянию: поддерживается только `targetEntityType = Person`.
+- Модели `Story`, `ArchiveMaterial`, `ChronicleEvent` в схеме БД сохранены для будущих этапов, но не участвуют в текущем пользовательском submission-flow.
+
+---
+
+## Локальный запуск
+
 1. Установить зависимости:
+
 ```bash
 npm install
 ```
-2. Создать `.env`:
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bookofmemories?schema=public"
-AUTH_SECRET="replace-with-long-random-string"
-NEXTAUTH_URL="http://localhost:3000"
-BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
+
+2. Создать `.env` на основе примера:
+
+```bash
+cp .env.example .env
 ```
-3. Применить миграцию и сгенерировать Prisma Client:
+
+3. Подготовить БД:
+
 ```bash
 npm run prisma:generate
 npx prisma migrate deploy
 ```
-4. Заполнить тестовыми данными:
+
+4. Заполнить демо-данными:
+
 ```bash
 npm run prisma:seed
 ```
-5. Запустить:
+
+5. Запустить приложение:
+
 ```bash
 npm run dev
 ```
 
-## Авторизация и тестовые аккаунты
-- Самостоятельная регистрация отключена (`registerAction` в `lib/actions.ts` всегда возвращает ошибку).
-- Вход в `/account` доступен только пользователям с ролями `MODERATOR` и `ADMIN`.
-- Пользователи с другими ролями (в т.ч. `AUTHOR`) не проходят авторизацию через Credentials provider.
-- Тестовые аккаунты из `prisma/seed.ts`:
-  - MODERATOR: `moderator@book.local` / `moderator123`
-  - ADMIN: `admin@book.local` / `admin123`
+---
 
-## Реализованные маршруты
-- `/`
-- `/memory`
-- `/submit`
-- `/submission-status`
-- `/about`
-- `/account`
-- `/admin`
-- `/api/auth/[...nextauth]`
+## Переменные окружения
 
-## Что не входит в MVP сейчас
-- Публичные разделы `/archive`, `/stories`, `/chronicle` и их detail-страницы.
-- Прием и публикация заявок с `targetEntityType` = `ArchiveMaterial` и `ChronicleEvent`.
-- Полноценный пользовательский self-signup поток.
-- Эти направления запланированы как следующие этапы после стабилизации текущего MVP.
+См. `.env.example`.
+
+### Обязательные
+
+- `DATABASE_URL` — строка подключения PostgreSQL.
+- `AUTH_SECRET` — секрет Auth.js.
+
+### Рекомендуемые
+
+- `NEXTAUTH_URL` — базовый URL приложения (callback-и, reset-link).
+- `APP_URL` — fallback для абсолютных ссылок (если `NEXTAUTH_URL` не задан).
+
+### Опциональные
+
+- `BLOB_READ_WRITE_TOKEN` — нужен для загрузки изображений в Vercel Blob.
+- `PASSWORD_RESET_EMAIL_WEBHOOK_URL` — webhook для доставки reset-ссылок.
+
+> В development без webhook reset-ссылка логируется сервером для QA.
+
+---
+
+## Prisma, миграции и seed
+
+- Схема: `prisma/schema.prisma`.
+- Миграции: `prisma/migrations/*`.
+- Seed: `prisma/seed.ts`.
+
+Команды:
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
+```
+
+---
+
+## Безопасность публичной отправки и upload
+
+Реализовано:
+
+- rate limit на публичную отправку (`submit`), upload (`/api/upload`) и lookup статуса;
+- honeypot-поле в публичной форме;
+- проверка формата URL и ограничение количества `photoUrls`;
+- upload принимает только изображения допустимых mime/ext;
+- upload дополнительно проверяет сигнатуру файла (magic bytes);
+- ограничение размера файла (5MB).
+
+---
 
 ## Модерация
-- В текущем MVP прием и публикация поддерживаются только для `targetEntityType`: `Person` и `Story`.
-- Для неподдерживаемых типов (`ArchiveMaterial`, `ChronicleEvent`) система возвращает явную ошибку валидации/публикации.
-- Каждая поддерживаемая заявка валидируется как discriminated union по `targetEntityType`.
-- В `Submission.payloadJson` сохраняется полный структурированный payload заявки без потери полей.
-- Заявка попадает в `Submission` со статусом `pending`.
-- Для каждой новой заявки генерируется одноразовый длинный токен доступа к статусу: в БД хранится только `accessTokenHash`, а пользователю показывается только raw-токен в защищенной ссылке.
-- Страница `/submission-status` принимает `token` (и опционально `email`), проверяет только hash токена и не раскрывает, существует ли конкретный email при ошибке.
-- У токена есть срок жизни (`accessTokenExpiresAt`), а при успешной проверке выполняется ротация токена (выдается новая ссылка).
-- Модератор/админ на `/admin` переводит в `approved`, `needs_revision` или `rejected`.
-- При `approved` публикация использует реальные данные из `payloadJson` (fallback применяется только для безопасных технических полей, например slug/частей ФИО при разборе).
 
-Формат payload по поддерживаемым типам:
-- `Person`: `fullName`, `biography`, `shortDescription?`, `birthDate?`, `deathDate?`, `faculty?`, `department?`, `photoUrls[]`.
-- `Story`: `title`, `storyType`, `excerpt`, `content`, `sourceInfo?`.
+`/admin` доступен только ролям `MODERATOR` и `ADMIN`.
 
-## Поиск и фильтрация
-- Поиск реализован в публичных разделах через query параметр `q`.
-- В архиве есть фильтрация по `type` (материалу).
+- Фильтрация заявок по статусу;
+- статусы: `pending`, `needs_revision`, `approved`, `rejected`;
+- при `approved` заявка `Person` создаёт запись в `Person` и связывается с `Submission.targetEntityId`.
 
-## Структура БД
-Основные сущности:
-- `User`
-- `Person`
-- `ArchiveMaterial`
-- `Story`
-- `ChronicleEvent`
-- `Submission`
+---
 
-`Submission` хранит универсальные поля (`submissionType`, `targetEntityType`, `status`, `moderatorComment`, связи с автором/модератором), `payloadJson` с типизированным JSON по `targetEntityType`, а также `accessTokenHash` + `accessTokenExpiresAt` для безопасного просмотра статуса по токену.
-Это позволяет принимать расширенные заявки на создание сущностей и публиковать их без «схлопывания» данных до `title/description`.
+## Восстановление пароля
 
-Связи many-to-many:
-- `Person ↔ ArchiveMaterial`
-- `Person ↔ Story`
-- `Person ↔ ChronicleEvent`
+Поток:
 
-См. полную схему: `prisma/schema.prisma`.
+1. Пользователь открывает `/account/forgot-password` и указывает email.
+2. Генерируется raw-токен, в БД хранится только SHA-256 hash (`PasswordResetToken.tokenHash`).
+3. Токен живёт 1 час (`expiresAt`).
+4. Ссылка ведёт на существующий маршрут: `/account/reset-password?token=...`.
+5. После успешной смены пароля токен помечается как использованный (`usedAt`) и повторно не применяется.
+
+---
+
+## Роли пользователей
+
+- `ADMIN` — полный доступ к админке.
+- `MODERATOR` — модерация заявок.
+- `AUTHOR` — роль в модели сохранена, но вход в админский flow не разрешён.
+
+Демо-учётки из seed:
+
+- `moderator@book.local` / `moderator123`
+- `admin@book.local` / `admin123`
