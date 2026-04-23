@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { EntityType } from "@prisma/client";
@@ -74,6 +74,10 @@ export function TypedSubmitForm() {
   };
 
   const [draft, setDraft] = useState<DraftState>({ ...defaultDraft, ...queryDraft });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(DRAFT_KEY);
@@ -95,6 +99,9 @@ export function TypedSubmitForm() {
   useEffect(() => {
     if (!isSubmitted) return;
     setDraft({ ...defaultDraft });
+    setPhotoFile(null);
+    setUploadedPhotoUrl("");
+    setUploadError(null);
     window.localStorage.removeItem(DRAFT_KEY);
   }, [isSubmitted]);
   const fieldLabels: Record<string, string> = {
@@ -107,6 +114,7 @@ export function TypedSubmitForm() {
     faculty: "Факультет",
     department: "Кафедра",
     photoUrls: "Фотографии",
+    uploadedPhotoUrl: "Загруженное фото",
     contactName: "Ваше имя",
     contactEmail: "Email для связи"
   };
@@ -127,8 +135,64 @@ export function TypedSubmitForm() {
     return "";
   }, [entityType]);
 
+  const uploadPhoto = async (file: File) => {
+    setIsUploadingPhoto(true);
+    setUploadError(null);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.set("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData
+      });
+
+      const json = (await response.json()) as { url?: string; error?: string };
+
+      if (!response.ok || !json.url) {
+        throw new Error(json.error ?? "Не удалось загрузить фото.");
+      }
+
+      setUploadedPhotoUrl(json.url);
+      return json.url;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось загрузить фото.";
+      setUploadError(message);
+      return null;
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    if (!photoFile || uploadedPhotoUrl) return;
+
+    event.preventDefault();
+    const uploadedUrl = await uploadPhoto(photoFile);
+    if (!uploadedUrl) return;
+    const uploadedPhotoField = event.currentTarget.elements.namedItem("uploadedPhotoUrl");
+    if (uploadedPhotoField instanceof HTMLInputElement) {
+      uploadedPhotoField.value = uploadedUrl;
+    }
+
+    const currentUrls = draft.photoUrls
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!currentUrls.includes(uploadedUrl)) {
+      setDraft((prev) => ({
+        ...prev,
+        photoUrls: prev.photoUrls.trim() ? `${prev.photoUrls.trim()}\n${uploadedUrl}` : uploadedUrl
+      }));
+    }
+
+    event.currentTarget.requestSubmit();
+  };
+
   return (
-    <form action={submitMaterialAction} className="space-y-4 rounded border border-slate-300 bg-white p-4">
+    <form action={submitMaterialAction} onSubmit={handleSubmit} className="space-y-4 rounded border border-slate-300 bg-white p-4">
       {isInvalidForm && (
         <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
           {errorField && fieldLabels[errorField] ? `Проверьте поле «${fieldLabels[errorField]}».` : "Проверьте форму."}
@@ -144,6 +208,7 @@ export function TypedSubmitForm() {
       ) : null}
 
       <input type="hidden" name="targetEntityType" value="Person" />
+      <input type="hidden" name="uploadedPhotoUrl" value={uploadedPhotoUrl} />
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
@@ -201,12 +266,27 @@ export function TypedSubmitForm() {
           {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
         </label>
         <label className="block">
+          Фотофайл <span className="text-slate-500">(необязательно, до 5 МБ)</span>
+          <input
+            type="file"
+            accept="image/*"
+            className={baseInputClass}
+            onChange={(event) => {
+              setPhotoFile(event.target.files?.[0] ?? null);
+              setUploadError(null);
+              setUploadedPhotoUrl("");
+            }}
+          />
+          {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
+        </label>
+        <label className="block">
           Фото (URL, каждая ссылка с новой строки) <span className="text-slate-500">(необязательно)</span>
           <textarea name="photoUrls" className={getInputClass("photoUrls")} rows={4} value={draft.photoUrls} onChange={(event) => setDraft((prev) => ({ ...prev, photoUrls: event.target.value }))} placeholder="https://example.com/memories/ivanov-portrait.jpg&#10;https://example.com/memories/ivanov-lecture-1989.jpg" />
           {getFieldErrorText("photoUrls") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("photoUrls")}</span> : null}
         </label>
       </div>
 
+      {isUploadingPhoto ? <p className="text-sm text-slate-600">Загружаем изображение…</p> : null}
       <SubmitButton />
     </form>
   );

@@ -19,6 +19,7 @@ npm install
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bookofmemories?schema=public"
 AUTH_SECRET="replace-with-long-random-string"
 NEXTAUTH_URL="http://localhost:3000"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
 ```
 3. Применить миграцию и сгенерировать Prisma Client:
 ```bash
