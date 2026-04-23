@@ -106,6 +106,8 @@ const submitSchema = z.discriminatedUnion("targetEntityType", [
   storySchema
 ]);
 
+const supportedSubmissionEntityTypes = [EntityType.Person, EntityType.Story] as const;
+
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
   contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
@@ -283,6 +285,16 @@ export async function logoutAction() {
 }
 
 export async function submitMaterialAction(formData: FormData) {
+  const rawTargetEntityType = String(formData.get("targetEntityType") ?? "");
+  if (!supportedSubmissionEntityTypes.includes(rawTargetEntityType as (typeof supportedSubmissionEntityTypes)[number])) {
+    const params = new URLSearchParams({
+      error: "invalid_form",
+      field: "targetEntityType",
+      message: "Этот тип материала пока не поддерживается в MVP. Сейчас доступны только Person и Story."
+    });
+    redirect(`/submit?${params.toString()}`);
+  }
+
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
     contactEmail: formData.get("contactEmail"),
@@ -416,6 +428,10 @@ export async function moderateSubmissionAction(formData: FormData) {
       return;
     }
 
+    if (!supportedSubmissionEntityTypes.includes(submission.targetEntityType as (typeof supportedSubmissionEntityTypes)[number])) {
+      throw new Error(`Публикация для типа ${submission.targetEntityType} пока не поддерживается в MVP.`);
+    }
+
     const payloadResult = submitSchema.safeParse(submission.payloadJson);
     if (!payloadResult.success) {
       throw new Error("Невалидный payload заявки, публикация невозможна.");
@@ -434,43 +450,48 @@ export async function moderateSubmissionAction(formData: FormData) {
 
     let createdEntityId: string | undefined;
 
-    if (payload.targetEntityType === EntityType.Person) {
-      const nameParts = payload.fullName.trim().split(/\s+/);
-      const createdPerson = await tx.person.create({
-        data: {
-          ...dataCommon,
-          slug,
-          fullName: payload.fullName,
-          firstName: nameParts[0] ?? "Неизвестно",
-          lastName: nameParts.slice(1).join(" ") || "Неизвестно",
-          shortDescription: payload.shortDescription || payload.biography.slice(0, 240),
-          biography: payload.biography,
-          birthDate: payload.birthDate,
-          deathDate: payload.deathDate,
-          faculty: payload.faculty,
-          department: payload.department,
-          photoUrl: payload.photoUrls[0] ?? null,
-          photoUrls: payload.photoUrls
-        }
-      });
+    switch (payload.targetEntityType) {
+      case EntityType.Person: {
+        const nameParts = payload.fullName.trim().split(/\s+/);
+        const createdPerson = await tx.person.create({
+          data: {
+            ...dataCommon,
+            slug,
+            fullName: payload.fullName,
+            firstName: nameParts[0] ?? "Неизвестно",
+            lastName: nameParts.slice(1).join(" ") || "Неизвестно",
+            shortDescription: payload.shortDescription || payload.biography.slice(0, 240),
+            biography: payload.biography,
+            birthDate: payload.birthDate,
+            deathDate: payload.deathDate,
+            faculty: payload.faculty,
+            department: payload.department,
+            photoUrl: payload.photoUrls[0] ?? null,
+            photoUrls: payload.photoUrls
+          }
+        });
 
-      createdEntityId = createdPerson.id;
-    }
+        createdEntityId = createdPerson.id;
+        break;
+      }
+      case EntityType.Story: {
+        const createdStory = await tx.story.create({
+          data: {
+            ...dataCommon,
+            slug,
+            title: payload.title,
+            storyType: payload.storyType,
+            excerpt: payload.excerpt,
+            content: payload.content,
+            sourceInfo: payload.sourceInfo
+          }
+        });
 
-    if (payload.targetEntityType === EntityType.Story) {
-      const createdStory = await tx.story.create({
-        data: {
-          ...dataCommon,
-          slug,
-          title: payload.title,
-          storyType: payload.storyType,
-          excerpt: payload.excerpt,
-          content: payload.content,
-          sourceInfo: payload.sourceInfo
-        }
-      });
-
-      createdEntityId = createdStory.id;
+        createdEntityId = createdStory.id;
+        break;
+      }
+      default:
+        throw new Error(`Тип ${payload.targetEntityType} не поддерживается для публикации в MVP.`);
     }
 
     if (createdEntityId) {

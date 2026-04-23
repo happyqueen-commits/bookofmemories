@@ -2,9 +2,9 @@ import { EntityType, SubmissionType } from "@prisma/client";
 
 const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   [EntityType.Person]: "Персона (Книга участников)",
-  [EntityType.ArchiveMaterial]: "Архивный материал",
+  [EntityType.ArchiveMaterial]: "Архивный материал (пока не поддерживается в MVP)",
   [EntityType.Story]: "История / интервью",
-  [EntityType.ChronicleEvent]: "Событие хроники"
+  [EntityType.ChronicleEvent]: "Событие хроники (пока не поддерживается в MVP)"
 };
 
 const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {

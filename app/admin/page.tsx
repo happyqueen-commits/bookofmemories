@@ -52,6 +52,9 @@ export default async function AdminPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold">Панель модерации</h1>
+      <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        В MVP автопубликация поддерживается только для заявок Person и Story. Для остальных типов требуется ручная обработка.
+      </p>
       <div className="space-y-4">
         {submissions.map((s) => (
           <article key={s.id} className="rounded border border-slate-300 bg-white p-4">
@@ -61,6 +64,11 @@ export default async function AdminPage() {
               {getEntityTypeLabel(s.targetEntityType)}
               {s.targetEntityId ? <span className="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">уже опубликовано</span> : null}
             </p>
+            {s.targetEntityType !== "Person" && s.targetEntityType !== "Story" ? (
+              <p className="mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                Этот тип пока не поддерживается для автопубликации.
+              </p>
+            ) : null}
             <div className="mt-3 space-y-2 rounded border border-slate-200 bg-slate-50 p-3 text-sm">
               {Object.entries((s.payloadJson as Record<string, unknown>) ?? {}).map(([field, value]) => (
                 <div key={field}>
