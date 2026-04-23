@@ -89,7 +89,8 @@ const personSchema = z.object({
   deathDate: optionalDate,
   faculty: optionalTrimmedString,
   department: optionalTrimmedString,
-  photoUrls: optionalStringArrayFromLines
+  photoUrls: optionalStringArrayFromLines,
+  uploadedPhotoUrl: optionalUrl
 });
 
 const storySchema = z.object({
@@ -319,7 +320,8 @@ export async function submitMaterialAction(formData: FormData) {
     excerpt: formData.get("excerpt"),
     content: formData.get("content"),
     coverImageUrl: formData.get("coverImageUrl"),
-    photoUrls: formData.get("photoUrls")
+    photoUrls: formData.get("photoUrls"),
+    uploadedPhotoUrl: formData.get("uploadedPhotoUrl")
   });
 
   if (!parsed.success || !contactParsed.success) {
@@ -342,7 +344,8 @@ export async function submitMaterialAction(formData: FormData) {
       faculty: String(formData.get("faculty") ?? ""),
       department: String(formData.get("department") ?? ""),
       shortDescription: String(formData.get("shortDescription") ?? ""),
-      photoUrls: String(formData.get("photoUrls") ?? "")
+      photoUrls: String(formData.get("photoUrls") ?? ""),
+      uploadedPhotoUrl: String(formData.get("uploadedPhotoUrl") ?? "")
     });
     if (typeof line === "number") {
       params.set("line", String(line));
@@ -438,6 +441,10 @@ export async function moderateSubmissionAction(formData: FormData) {
     }
 
     const payload = payloadResult.data;
+    const personPhotoUrls =
+      payload.targetEntityType === EntityType.Person
+        ? Array.from(new Set([...payload.photoUrls, ...(payload.uploadedPhotoUrl ? [payload.uploadedPhotoUrl] : [])]))
+        : [];
     const slugSource = "title" in payload ? payload.title : payload.fullName;
     const slugBase = slugSource.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-|-$/g, "");
     const slug = `${slugBase || "material"}-${Date.now()}`;
@@ -466,8 +473,8 @@ export async function moderateSubmissionAction(formData: FormData) {
             deathDate: payload.deathDate,
             faculty: payload.faculty,
             department: payload.department,
-            photoUrl: payload.photoUrls[0] ?? null,
-            photoUrls: payload.photoUrls
+            photoUrl: personPhotoUrls[0] ?? null,
+            photoUrls: personPhotoUrls
           }
         });
 
@@ -491,7 +498,7 @@ export async function moderateSubmissionAction(formData: FormData) {
         break;
       }
       default:
-        throw new Error(`Тип ${payload.targetEntityType} не поддерживается для публикации в MVP.`);
+        throw new Error("Тип заявки не поддерживается для публикации в MVP.");
     }
 
     if (createdEntityId) {
