@@ -12,6 +12,16 @@ function sanitizeFileName(fileName: string) {
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        {
+          error:
+            "Сервис загрузки временно недоступен: не настроен BLOB_READ_WRITE_TOKEN. Добавьте ссылку в поле URL фото или обратитесь к администратору."
+        },
+        { status: 503 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 
