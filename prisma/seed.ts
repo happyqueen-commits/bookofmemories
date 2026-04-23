@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 
 async function main() {
   await prisma.$transaction([
+    prisma.publicRateLimit.deleteMany(),
     prisma.loginAttempt.deleteMany(),
     prisma.passwordResetToken.deleteMany(),
     prisma.submission.deleteMany(),

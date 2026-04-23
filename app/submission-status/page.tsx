@@ -2,6 +2,9 @@ import Link from "next/link";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getEntityTypeLabel } from "@/lib/entity-labels";
+import { checkPublicRateLimit } from "@/lib/public-rate-limit";
+import { getClientIpFromHeaders } from "@/lib/login-rate-limit";
+import { headers } from "next/headers";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "На рассмотрении",
@@ -25,6 +28,18 @@ export default async function SubmissionStatusPage({
   let submissions: Awaited<ReturnType<typeof prisma.submission.findMany>> = [];
 
   if (token) {
+    const ip = getClientIpFromHeaders(headers());
+    const rateLimit = await checkPublicRateLimit(ip, "statusLookup");
+    if (!rateLimit.allowed) {
+      return (
+        <div>
+          <h1 className="text-2xl font-semibold">Статус поданных материалов</h1>
+          <p className="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Слишком много запросов. Повторите позже.
+          </p>
+        </div>
+      );
+    }
     const accessTokenHash = crypto.createHash("sha256").update(token).digest("hex");
     submissions = await prisma.submission.findMany({
       where: {

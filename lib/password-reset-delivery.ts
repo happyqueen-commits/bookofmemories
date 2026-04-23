@@ -1,8 +1,11 @@
+import { getAppBaseUrl } from "@/lib/env";
+
 const PASSWORD_RESET_EMAIL_WEBHOOK_URL = process.env.PASSWORD_RESET_EMAIL_WEBHOOK_URL;
 
 export async function deliverPasswordResetToken(email: string, rawToken: string) {
-  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "http://localhost:3000";
-  const resetUrl = `${baseUrl.replace(/\/$/, "")}/account/forgot-password/reset?token=${encodeURIComponent(rawToken)}`;
+  const baseUrl = getAppBaseUrl();
+  const resetUrl = new URL("/account/reset-password", baseUrl);
+  resetUrl.searchParams.set("token", rawToken);
 
   if (PASSWORD_RESET_EMAIL_WEBHOOK_URL) {
     const response = await fetch(PASSWORD_RESET_EMAIL_WEBHOOK_URL, {
@@ -11,8 +14,7 @@ export async function deliverPasswordResetToken(email: string, rawToken: string)
       body: JSON.stringify({
         type: "password_reset",
         email,
-        resetUrl,
-        token: rawToken
+        resetUrl: resetUrl.toString()
       }),
       cache: "no-store"
     });
@@ -25,8 +27,7 @@ export async function deliverPasswordResetToken(email: string, rawToken: string)
   }
 
   if (process.env.NODE_ENV !== "production") {
-    // Internal QA channel: server-side log only (not exposed to UI).
-    console.info(`[password-reset][internal-qa] email=${email} token=${rawToken} resetUrl=${resetUrl}`);
+    console.info(`[password-reset][internal-qa] email=${email} resetUrl=${resetUrl.toString()}`);
     return;
   }
 

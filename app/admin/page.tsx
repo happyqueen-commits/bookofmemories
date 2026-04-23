@@ -1,4 +1,4 @@
-import { Role } from "@prisma/client";
+import { ModerationStatus, Role } from "@prisma/client";
 import { moderateSubmissionAction } from "@/lib/actions";
 import { auth } from "@/lib/auth";
 import { getEntityTypeLabel } from "@/lib/entity-labels";
@@ -12,84 +12,115 @@ const payloadFieldLabels: Record<string, string> = {
   deathDate: "Дата смерти",
   faculty: "Факультет",
   department: "Кафедра",
-  title: "Заголовок",
-  summary: "Краткая сводка",
-  content: "Подробное описание",
-  eventDate: "Дата события",
-  coverImageUrl: "Обложка (URL)"
+  photoUrls: "Фото"
 };
 
 const moderationStatuses = [
-  { value: "approved", label: "✅ Принято" },
+  { value: "approved", label: "✅ Принять" },
   { value: "needs_revision", label: "✏️ Нужны правки" },
-  { value: "rejected", label: "⛔ Отклонено" }
+  { value: "rejected", label: "⛔ Отклонить" }
 ] as const;
 
+const statusBadge: Record<ModerationStatus, string> = {
+  pending: "bg-amber-100 text-amber-900 border-amber-200",
+  needs_revision: "bg-blue-100 text-blue-900 border-blue-200",
+  approved: "bg-emerald-100 text-emerald-900 border-emerald-200",
+  rejected: "bg-rose-100 text-rose-900 border-rose-200",
+  draft: "bg-slate-100 text-slate-700 border-slate-200"
+};
+
 function formatPayloadValue(value: unknown) {
-  if (value === null || value === undefined || value === "") {
-    return "—";
-  }
-
-  if (Array.isArray(value)) {
-    return value.length > 0 ? value.join(", ") : "—";
-  }
-
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
+  if (value === null || value === undefined || value === "") return "—";
+  if (Array.isArray(value)) return value.length ? value.join("\n") : "—";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
   return String(value);
 }
 
-export default async function AdminPage() {
+function parseStatus(status?: string): ModerationStatus | undefined {
+  if (!status) return undefined;
+  if (["pending", "needs_revision", "approved", "rejected"].includes(status)) {
+    return status as ModerationStatus;
+  }
+  return undefined;
+}
+
+export default async function AdminPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ status?: string }>;
+}) {
   const session = await auth();
   if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
     return <div><h1 className="text-2xl font-semibold">Админ-панель</h1><p className="mt-2">Доступ только для MODERATOR/ADMIN.</p></div>;
   }
 
-  const submissions = await prisma.submission.findMany({ where: { status: { in: ["pending", "needs_revision", "approved"] } }, include: { author: true }, orderBy: { createdAt: "desc" } });
+  const params = (await searchParams) ?? {};
+  const filterStatus = parseStatus(params.status);
+
+  const submissions = await prisma.submission.findMany({
+    where: {
+      targetEntityType: "Person",
+      ...(filterStatus ? { status: filterStatus } : { status: { in: ["pending", "needs_revision", "approved", "rejected"] } })
+    },
+    include: { author: true },
+    orderBy: { createdAt: "desc" }
+  });
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold">Панель модерации</h1>
-      <p className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-        В MVP автопубликация поддерживается только для заявок Person и Story. Для остальных типов требуется ручная обработка.
-      </p>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Панель модерации</h1>
+        <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          MVP сейчас поддерживает публикацию только заявок типа Person. Остальные типы исключены из модерационного потока.
+        </p>
+      </div>
+
+      <form className="flex items-end gap-2 rounded border border-slate-200 bg-white p-3" method="get">
+        <label className="text-sm">
+          Фильтр по статусу
+          <select defaultValue={filterStatus ?? ""} name="status" className="ml-2 rounded border border-slate-300 px-2 py-1">
+            <option value="">Все</option>
+            <option value="pending">На рассмотрении</option>
+            <option value="needs_revision">Нужна доработка</option>
+            <option value="approved">Одобрено</option>
+            <option value="rejected">Отклонено</option>
+          </select>
+        </label>
+        <button className="rounded border border-slate-300 px-3 py-1 text-sm">Применить</button>
+      </form>
+
       <div className="space-y-4">
         {submissions.map((s) => (
-          <article key={s.id} className="rounded border border-slate-300 bg-white p-4">
-            <p className="text-sm text-slate-600">Контакт автора: {s.contactName} ({s.contactEmail})</p>
-            {s.author ? <p className="text-xs text-slate-500">Связанная учетная запись: {s.author.name} ({s.author.email})</p> : null}
-            <p className="font-medium">
-              {getEntityTypeLabel(s.targetEntityType)}
-              {s.targetEntityId ? <span className="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">уже опубликовано</span> : null}
-            </p>
-            {s.targetEntityType !== "Person" && s.targetEntityType !== "Story" ? (
-              <p className="mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                Этот тип пока не поддерживается для автопубликации.
-              </p>
-            ) : null}
-            <div className="mt-3 space-y-2 rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+          <article key={s.id} className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+              <p className="font-medium">{getEntityTypeLabel(s.targetEntityType)}</p>
+              <span className={`rounded border px-2 py-0.5 text-xs font-medium ${statusBadge[s.status]}`}>{s.status}</span>
+            </div>
+
+            <div className="mt-2 space-y-1 text-sm text-slate-700">
+              <p>Контакт автора: <strong>{s.contactName}</strong> ({s.contactEmail})</p>
+              {s.author ? <p className="text-xs text-slate-500">Связанная учетная запись: {s.author.name} ({s.author.email})</p> : null}
+              <p className="text-xs text-slate-500">ID заявки: {s.id}</p>
+            </div>
+
+            <div className="mt-3 grid gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-2">
               {Object.entries((s.payloadJson as Record<string, unknown>) ?? {}).map(([field, value]) => (
                 <div key={field}>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {payloadFieldLabels[field] ?? field}
-                  </p>
-                  <p className="whitespace-pre-wrap text-slate-900">{formatPayloadValue(value)}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{payloadFieldLabels[field] ?? field}</p>
+                  <p className="whitespace-pre-wrap break-words text-slate-900">{formatPayloadValue(value)}</p>
                 </div>
               ))}
             </div>
+
             <form action={moderateSubmissionAction} className="mt-3 grid gap-2 sm:grid-cols-4">
               <input type="hidden" name="submissionId" value={s.id} />
               <select name="status" className="rounded border border-slate-300 px-2 py-1">
                 {moderationStatuses.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
+                  <option key={status.value} value={status.value}>{status.label}</option>
                 ))}
               </select>
-              <input name="moderatorComment" placeholder="Комментарий" className="rounded border border-slate-300 px-2 py-1 sm:col-span-2" />
-              <button className="rounded bg-slate-800 px-3 py-1 text-white">Применить</button>
+              <input name="moderatorComment" placeholder="Комментарий модератора" className="rounded border border-slate-300 px-2 py-1 sm:col-span-2" />
+              <button className="rounded bg-slate-800 px-3 py-1 text-white">Сохранить</button>
             </form>
           </article>
         ))}

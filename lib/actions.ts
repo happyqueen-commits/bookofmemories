@@ -13,6 +13,9 @@ import { getClientIpFromHeaders, getLoginRateLimitState } from "@/lib/login-rate
 import { passwordSchema } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
 import { deliverPasswordResetToken } from "@/lib/password-reset-delivery";
+import { parsePersonName } from "@/lib/person-name";
+import { generateUniquePersonSlug } from "@/lib/slug";
+import { checkPublicRateLimit } from "@/lib/public-rate-limit";
 
 const optionalTrimmedString = z.preprocess((value) => {
   if (typeof value !== "string") return undefined;
@@ -36,17 +39,7 @@ const optionalStringArrayFromLines = z.preprocess((value) => {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-}, z.array(z.string()).superRefine((urls, ctx) => {
-  urls.forEach((url, index) => {
-    if (!z.string().url().safeParse(url).success) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [index],
-        message: `Некорректный URL в строке ${index + 1}.`
-      });
-    }
-  });
-}).default([]));
+}, z.array(z.string().url()).max(10).default([]));
 
 function formatSubmitValidationIssue(issue?: z.ZodIssue) {
   if (!issue) {
@@ -59,11 +52,6 @@ function formatSubmitValidationIssue(issue?: z.ZodIssue) {
 
   const pathRoot = typeof issue.path[0] === "string" ? issue.path[0] : "form";
   const pathIndex = typeof issue.path[1] === "number" ? issue.path[1] : undefined;
-  const message = issue.message?.trim();
-  const genericMessages = new Set(["Invalid input", "Invalid input: expected string, received null"]);
-  const fallbackMessage = genericMessages.has(message)
-    ? "Проверьте заполнение формы."
-    : message || "Проверьте форму.";
 
   if (pathRoot === "photoUrls" && pathIndex !== undefined) {
     return {
@@ -75,7 +63,7 @@ function formatSubmitValidationIssue(issue?: z.ZodIssue) {
 
   return {
     field: pathRoot,
-    message: fallbackMessage,
+    message: issue.message || "Проверьте форму.",
     line: undefined as number | undefined
   };
 }
@@ -90,24 +78,9 @@ const personSchema = z.object({
   faculty: optionalTrimmedString,
   department: optionalTrimmedString,
   photoUrls: optionalStringArrayFromLines,
-  uploadedPhotoUrl: optionalUrl
+  uploadedPhotoUrl: optionalUrl,
+  website: z.string().trim().optional().default("")
 });
-
-const storySchema = z.object({
-  targetEntityType: z.literal("Story"),
-  title: z.string().trim().min(2),
-  storyType: z.string().trim().min(2),
-  excerpt: z.string().trim().min(3),
-  content: z.string().trim().min(10),
-  sourceInfo: optionalTrimmedString
-});
-
-const submitSchema = z.discriminatedUnion("targetEntityType", [
-  personSchema,
-  storySchema
-]);
-
-const supportedSubmissionEntityTypes = [EntityType.Person, EntityType.Story] as const;
 
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
@@ -286,21 +259,25 @@ export async function logoutAction() {
 }
 
 export async function submitMaterialAction(formData: FormData) {
-  const rawTargetEntityType = String(formData.get("targetEntityType") ?? "");
-  if (!supportedSubmissionEntityTypes.includes(rawTargetEntityType as (typeof supportedSubmissionEntityTypes)[number])) {
+  const requestHeaders = headers();
+  const ip = getClientIpFromHeaders(requestHeaders);
+  const rateLimit = await checkPublicRateLimit(ip, "submit");
+
+  if (!rateLimit.allowed) {
     const params = new URLSearchParams({
       error: "invalid_form",
-      field: "targetEntityType",
-      message: "Этот тип материала пока не поддерживается в MVP. Сейчас доступны только Person и Story."
+      field: "form",
+      message: "Слишком много попыток отправки. Повторите позже."
     });
     redirect(`/submit?${params.toString()}`);
   }
 
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
-    contactEmail: formData.get("contactEmail"),
+    contactEmail: formData.get("contactEmail")
   });
-  const parsed = submitSchema.safeParse({
+
+  const parsed = personSchema.safeParse({
     targetEntityType: formData.get("targetEntityType"),
     fullName: formData.get("fullName"),
     biography: formData.get("biography"),
@@ -309,19 +286,9 @@ export async function submitMaterialAction(formData: FormData) {
     deathDate: formData.get("deathDate"),
     faculty: formData.get("faculty"),
     department: formData.get("department"),
-    title: formData.get("title"),
-    description: formData.get("description"),
-    materialType: formData.get("materialType"),
-    sourceInfo: formData.get("sourceInfo"),
-    tags: formData.get("tags"),
-    fileUrl: formData.get("fileUrl"),
-    previewImageUrl: formData.get("previewImageUrl"),
-    storyType: formData.get("storyType"),
-    excerpt: formData.get("excerpt"),
-    content: formData.get("content"),
-    coverImageUrl: formData.get("coverImageUrl"),
     photoUrls: formData.get("photoUrls"),
-    uploadedPhotoUrl: formData.get("uploadedPhotoUrl")
+    uploadedPhotoUrl: formData.get("uploadedPhotoUrl"),
+    website: formData.get("website")
   });
 
   if (!parsed.success || !contactParsed.success) {
@@ -344,13 +311,16 @@ export async function submitMaterialAction(formData: FormData) {
       faculty: String(formData.get("faculty") ?? ""),
       department: String(formData.get("department") ?? ""),
       shortDescription: String(formData.get("shortDescription") ?? ""),
-      photoUrls: String(formData.get("photoUrls") ?? ""),
-      uploadedPhotoUrl: String(formData.get("uploadedPhotoUrl") ?? "")
+      photoUrls: String(formData.get("photoUrls") ?? "")
     });
     if (typeof line === "number") {
       params.set("line", String(line));
     }
     redirect(`/submit?${params.toString()}`);
+  }
+
+  if (parsed.data.website) {
+    redirect("/submit?success=submitted");
   }
 
   const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
@@ -366,9 +336,12 @@ export async function submitMaterialAction(formData: FormData) {
       contactEmail: normalizedEmail,
       accessTokenHash,
       accessTokenExpiresAt,
-      payloadJson: parsed.data,
+      payloadJson: {
+        ...parsed.data,
+        website: undefined
+      },
       submissionType: SubmissionType.create,
-      targetEntityType: parsed.data.targetEntityType as EntityType,
+      targetEntityType: EntityType.Person,
       status: ModerationStatus.pending
     },
     select: { id: true }
@@ -385,13 +358,6 @@ export async function submitMaterialAction(formData: FormData) {
 }
 
 export async function moderateSubmissionAction(formData: FormData) {
-  /**
-   * Revalidate map after moderation:
-   * - /admin — moderation queue and statuses.
-   * - /memory — public people list (Person publications).
-   * - /stories — public stories list (Story publications).
-   * - / — public showcase (featured/statistics), always as fallback.
-   */
   const session = await auth();
   if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
     throw new Error("Недостаточно прав");
@@ -419,8 +385,6 @@ export async function moderateSubmissionAction(formData: FormData) {
     throw new Error("Заявка не найдена.");
   }
 
-  let publishedTargetEntityType: EntityType | null = null;
-
   await prisma.$transaction(async (tx) => {
     const submission = await tx.submission.update({
       where: { id: submissionId },
@@ -431,91 +395,48 @@ export async function moderateSubmissionAction(formData: FormData) {
       return;
     }
 
-    if (!supportedSubmissionEntityTypes.includes(submission.targetEntityType as (typeof supportedSubmissionEntityTypes)[number])) {
-      throw new Error(`Публикация для типа ${submission.targetEntityType} пока не поддерживается в MVP.`);
+    if (submission.targetEntityType !== EntityType.Person) {
+      throw new Error("В текущем MVP автопубликация поддерживается только для Person.");
     }
 
-    const payloadResult = submitSchema.safeParse(submission.payloadJson);
+    const payloadResult = personSchema.safeParse(submission.payloadJson);
     if (!payloadResult.success) {
       throw new Error("Невалидный payload заявки, публикация невозможна.");
     }
 
     const payload = payloadResult.data;
-    const personPhotoUrls =
-      payload.targetEntityType === EntityType.Person
-        ? Array.from(new Set([...payload.photoUrls, ...(payload.uploadedPhotoUrl ? [payload.uploadedPhotoUrl] : [])]))
-        : [];
-    const slugSource = "title" in payload ? payload.title : payload.fullName;
-    const slugBase = slugSource.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-|-$/g, "");
-    const slug = `${slugBase || "material"}-${Date.now()}`;
+    const personPhotoUrls = Array.from(new Set([...payload.photoUrls, ...(payload.uploadedPhotoUrl ? [payload.uploadedPhotoUrl] : [])]));
+    const slug = await generateUniquePersonSlug(payload.fullName);
+    const parsedName = parsePersonName(payload.fullName);
 
-    const dataCommon = {
-      moderationStatus: ModerationStatus.approved,
-      publishedAt: new Date(),
-      submittedById: submission.authorId
-    };
-
-    let createdEntityId: string | undefined;
-
-    switch (payload.targetEntityType) {
-      case EntityType.Person: {
-        const nameParts = payload.fullName.trim().split(/\s+/);
-        const createdPerson = await tx.person.create({
-          data: {
-            ...dataCommon,
-            slug,
-            fullName: payload.fullName,
-            firstName: nameParts[0] ?? "Неизвестно",
-            lastName: nameParts.slice(1).join(" ") || "Неизвестно",
-            shortDescription: payload.shortDescription || payload.biography.slice(0, 240),
-            biography: payload.biography,
-            birthDate: payload.birthDate,
-            deathDate: payload.deathDate,
-            faculty: payload.faculty,
-            department: payload.department,
-            photoUrl: personPhotoUrls[0] ?? null,
-            photoUrls: personPhotoUrls
-          }
-        });
-
-        createdEntityId = createdPerson.id;
-        break;
+    const createdPerson = await tx.person.create({
+      data: {
+        moderationStatus: ModerationStatus.approved,
+        publishedAt: new Date(),
+        submittedById: submission.authorId,
+        slug,
+        fullName: payload.fullName,
+        firstName: parsedName.firstName,
+        lastName: parsedName.lastName,
+        middleName: parsedName.middleName,
+        shortDescription: payload.shortDescription || payload.biography.slice(0, 240),
+        biography: payload.biography,
+        birthDate: payload.birthDate,
+        deathDate: payload.deathDate,
+        faculty: payload.faculty,
+        department: payload.department,
+        photoUrl: personPhotoUrls[0] ?? null,
+        photoUrls: personPhotoUrls
       }
-      case EntityType.Story: {
-        const createdStory = await tx.story.create({
-          data: {
-            ...dataCommon,
-            slug,
-            title: payload.title,
-            storyType: payload.storyType,
-            excerpt: payload.excerpt,
-            content: payload.content,
-            sourceInfo: payload.sourceInfo
-          }
-        });
+    });
 
-        createdEntityId = createdStory.id;
-        break;
-      }
-      default:
-        throw new Error("Тип заявки не поддерживается для публикации в MVP.");
-    }
-
-    if (createdEntityId) {
-      publishedTargetEntityType = payload.targetEntityType;
-      await tx.submission.update({
-        where: { id: submission.id },
-        data: { targetEntityId: createdEntityId }
-      });
-    }
+    await tx.submission.update({
+      where: { id: submission.id },
+      data: { targetEntityId: createdPerson.id }
+    });
   });
 
   revalidatePath("/admin");
-  if (publishedTargetEntityType === EntityType.Person) {
-    revalidatePath("/memory");
-  }
-  if (publishedTargetEntityType === EntityType.Story) {
-    revalidatePath("/stories");
-  }
+  revalidatePath("/memory");
   revalidatePath("/");
 }

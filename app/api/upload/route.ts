@@ -1,5 +1,9 @@
+import crypto from "node:crypto";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { checkPublicRateLimit } from "@/lib/public-rate-limit";
+import { getClientIpFromHeaders } from "@/lib/login-rate-limit";
+import { validateUploadImage } from "@/lib/upload-validation";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -12,6 +16,16 @@ function sanitizeFileName(fileName: string) {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIpFromHeaders(request.headers);
+    const rateLimit = await checkPublicRateLimit(ip, "upload");
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Слишком много загрузок с этого IP. Повторите позже." },
+        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+      );
+    }
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json(
         {
@@ -29,17 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Файл не передан." }, { status: 400 });
     }
 
-    if (!file.type || !file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Разрешена загрузка только изображений." }, { status: 400 });
-    }
-
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      return NextResponse.json({ error: "Размер изображения не должен превышать 5 МБ." }, { status: 400 });
+    const validation = await validateUploadImage(file, MAX_IMAGE_SIZE_BYTES);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
     const safeName = sanitizeFileName(file.name || "photo");
     const extension = safeName.includes(".") ? safeName.split(".").pop() : "jpg";
-    const fileName = `participants/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const fileName = `participants/${crypto.randomUUID()}.${extension}`;
 
     const blob = await put(fileName, file, {
       access: "public",
