@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Card, formatLifespan } from "@/components/card";
-import { SearchForm } from "@/components/search-form";
 import { getHomepageData } from "@/lib/content";
 
 export default async function Home() {
@@ -10,12 +9,9 @@ export default async function Home() {
     <div className="space-y-rhythm">
       <section className="rounded-xl border-2 border-[#ccb089] bg-gradient-to-br from-[#f9f3e6] via-[#f6efdf] to-[#efe1c8] p-6 shadow-[0_14px_38px_rgb(76_50_24_/_0.14)] md:p-10">
         <div className="max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a5b3a]">Поиск документов об участниках</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a5b3a]">Электронный архив участников</p>
           <h1 className="mt-5 display-title text-[#3f2e1f]">Книга участников: Жизнь Финансового университета во времена СВО</h1>
-          <p className="mt-5 max-w-3xl text-[1.03rem] leading-relaxed text-[#5d4732]">Уточняйте имя и факты о человеке, чтобы быстрее перейти в карточку и ознакомиться с подтвержденными материалами архива.</p>
-        </div>
-        <div className="mt-8 rounded-lg border border-[#c9aa83] bg-[#fffaf0]/90 p-3 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.65)] md:p-4">
-          <SearchForm placeholder="Фамилия, имя, подразделение или событие" />
+          <p className="mt-5 max-w-3xl text-[1.03rem] leading-relaxed text-[#5d4732]">Портал хранит подтвержденные сведения о людях и событиях, связанных с историей университета.</p>
         </div>
         <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Проверенные материалы и публичные карточки участников в едином архиве.</p>
       </section>
