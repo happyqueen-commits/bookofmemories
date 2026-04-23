@@ -21,11 +21,11 @@ function isActivePath(pathname: string, href: string) {
 
 function getLinkClasses(active: boolean) {
   return [
-    "rounded-md px-3.5 py-2.5 text-sm font-semibold tracking-[0.01em] no-underline transition-colors duration-200",
+    "rounded-md border px-3.5 py-2.5 text-sm font-semibold tracking-[0.01em] no-underline transition-colors duration-200",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     active
-      ? "bg-accent text-[#fff8ee] shadow-sm hover:bg-[#74261d]"
-      : "text-[#5c4a35] hover:bg-[#e7d9c0] hover:text-[#3f2f20]"
+      ? "border-[#7c2d22] bg-accent text-[#fff8ee] shadow-sm hover:bg-[#74261d]"
+      : "border-[#d6c3a4] bg-[#f8f1e3] text-[#5c4a35] hover:bg-[#ecdfc8] hover:text-[#3f2f20]"
   ].join(" ");
 }
 
