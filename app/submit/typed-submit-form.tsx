@@ -215,6 +215,7 @@ export function TypedSubmitForm() {
 
       <input type="hidden" name="targetEntityType" value="Person" />
       <input type="hidden" name="uploadedPhotoUrl" value={uploadedPhotoUrl} />
+      <input type="hidden" name="photoUrls" value={draft.photoUrls} />
       <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
 
       <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
@@ -232,45 +233,6 @@ export function TypedSubmitForm() {
       </div>
 
       <div className="space-y-3">
-        <label className="block">
-          Фотофайл <span className="text-slate-500">(необязательно, до 5 МБ)</span>
-          <input
-            type="file"
-            accept="image/*"
-            className={baseInputClass}
-            onChange={(event) => {
-              const nextFile = event.target.files?.[0] ?? null;
-              setPhotoFile(nextFile);
-              setUploadedPhotoUrl("");
-
-              if (!nextFile) {
-                setUploadError(null);
-                return;
-              }
-
-              if (!nextFile.type || !nextFile.type.startsWith("image/")) {
-                setUploadError("Выберите файл изображения.");
-                return;
-              }
-
-              if (nextFile.size > 5 * 1024 * 1024) {
-                setUploadError("Размер изображения не должен превышать 5 МБ.");
-                return;
-              }
-
-              setUploadError(null);
-            }}
-          />
-          <span className="mt-1 block text-xs text-slate-600">
-            Можно загружать фото любого разрешения — изображение подстроится на карточке автоматически. Для лучшего качества рекомендуем портретное фото от 800×1000 px.
-          </span>
-          {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
-        </label>
-        <label className="block">
-          Фото (URL, каждая ссылка с новой строки) <span className="text-slate-500">(необязательно)</span>
-          <textarea name="photoUrls" className={getInputClass("photoUrls")} rows={4} value={draft.photoUrls} onChange={(event) => setDraft((prev) => ({ ...prev, photoUrls: event.target.value }))} placeholder="https://example.com/memories/ivanov-portrait.jpg&#10;https://example.com/memories/ivanov-lecture-1989.jpg" />
-          {getFieldErrorText("photoUrls") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("photoUrls")}</span> : null}
-        </label>
         <label className="block">
           ФИО <span className="text-slate-500">(обязательно)</span>
           <input name="fullName" className={getInputClass("fullName")} value={draft.fullName} onChange={(event) => setDraft((prev) => ({ ...prev, fullName: event.target.value }))} placeholder="Например: Иванов Иван Иванович" required />
@@ -309,6 +271,40 @@ export function TypedSubmitForm() {
           Краткое описание <span className="text-slate-500">(необязательно)</span>
           <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: Профессор кафедры, автор учебников по вычислительной математике" />
           {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
+        </label>
+        <label className="mt-6 block">
+          Фотофайл <span className="text-slate-500">(необязательно, до 5 МБ)</span>
+          <input
+            type="file"
+            accept="image/*"
+            className={baseInputClass}
+            onChange={(event) => {
+              const nextFile = event.target.files?.[0] ?? null;
+              setPhotoFile(nextFile);
+              setUploadedPhotoUrl("");
+
+              if (!nextFile) {
+                setUploadError(null);
+                return;
+              }
+
+              if (!nextFile.type || !nextFile.type.startsWith("image/")) {
+                setUploadError("Выберите файл изображения.");
+                return;
+              }
+
+              if (nextFile.size > 5 * 1024 * 1024) {
+                setUploadError("Размер изображения не должен превышать 5 МБ.");
+                return;
+              }
+
+              setUploadError(null);
+            }}
+          />
+          <span className="mt-1 block text-xs text-slate-600">
+            Можно загружать фото любого разрешения — изображение подстроится на карточке автоматически. Для лучшего качества рекомендуем портретное фото от 800×1000 px.
+          </span>
+          {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
         </label>
       </div>
 
