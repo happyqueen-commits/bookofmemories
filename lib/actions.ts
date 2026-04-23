@@ -116,6 +116,8 @@ const moderateSchema = z.object({
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
 
+const SUBMISSION_ACCESS_TOKEN_TTL_DAYS = 30;
+
 export type RegisterActionState = {
   status: "idle" | "error" | "success";
   errors?: {
@@ -334,11 +336,17 @@ export async function submitMaterialAction(formData: FormData) {
 
   const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
 
+  const rawAccessToken = crypto.randomBytes(32).toString("base64url");
+  const accessTokenHash = crypto.createHash("sha256").update(rawAccessToken).digest("hex");
+  const accessTokenExpiresAt = new Date(Date.now() + SUBMISSION_ACCESS_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+
   await prisma.submission.create({
     data: {
       authorId: null,
       contactName: contactParsed.data.contactName,
       contactEmail: normalizedEmail,
+      accessTokenHash,
+      accessTokenExpiresAt,
       payloadJson: parsed.data,
       submissionType: SubmissionType.create,
       targetEntityType: parsed.data.targetEntityType as EntityType,
@@ -352,7 +360,7 @@ export async function submitMaterialAction(formData: FormData) {
 
   const successParams = new URLSearchParams({
     success: "submitted",
-    contactEmail: normalizedEmail
+    statusToken: rawAccessToken
   });
   redirect(`/submit?${successParams.toString()}`);
 }

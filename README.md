@@ -59,6 +59,9 @@ npm run dev
 - Каждая заявка валидируется как discriminated union по `targetEntityType` (разные обязательные поля для каждого типа).
 - В `Submission.payloadJson` сохраняется полный структурированный payload заявки без потери полей.
 - Заявка попадает в `Submission` со статусом `pending`.
+- Для каждой новой заявки генерируется одноразовый длинный токен доступа к статусу: в БД хранится только `accessTokenHash`, а пользователю показывается только raw-токен в защищенной ссылке.
+- Страница `/submission-status` принимает `token` (и опционально `email`), проверяет только hash токена и не раскрывает, существует ли конкретный email при ошибке.
+- У токена есть срок жизни (`accessTokenExpiresAt`), а при успешной проверке выполняется ротация токена (выдается новая ссылка).
 - Модератор/админ на `/admin` переводит в `approved`, `needs_revision` или `rejected`.
 - При `approved` публикация использует реальные данные из `payloadJson` (fallback применяется только для безопасных технических полей, например slug/частей ФИО при разборе).
 
@@ -81,7 +84,7 @@ npm run dev
 - `ChronicleEvent`
 - `Submission`
 
-`Submission` хранит универсальные поля (`submissionType`, `targetEntityType`, `status`, `moderatorComment`, связи с автором/модератором) и `payloadJson` с типизированным JSON по `targetEntityType`.
+`Submission` хранит универсальные поля (`submissionType`, `targetEntityType`, `status`, `moderatorComment`, связи с автором/модератором), `payloadJson` с типизированным JSON по `targetEntityType`, а также `accessTokenHash` + `accessTokenExpiresAt` для безопасного просмотра статуса по токену.
 Это позволяет принимать расширенные заявки на создание сущностей и публиковать их без «схлопывания» данных до `title/description`.
 
 Связи many-to-many:
