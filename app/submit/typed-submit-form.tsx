@@ -148,7 +148,12 @@ export function TypedSubmitForm() {
         body: uploadFormData
       });
 
-      const json = (await response.json()) as { url?: string; error?: string };
+      let json: { url?: string; error?: string } = {};
+      try {
+        json = (await response.json()) as { url?: string; error?: string };
+      } catch {
+        json = {};
+      }
 
       if (!response.ok || !json.url) {
         throw new Error(json.error ?? "Не удалось загрузить фото.");
@@ -272,9 +277,26 @@ export function TypedSubmitForm() {
             accept="image/*"
             className={baseInputClass}
             onChange={(event) => {
-              setPhotoFile(event.target.files?.[0] ?? null);
-              setUploadError(null);
+              const nextFile = event.target.files?.[0] ?? null;
+              setPhotoFile(nextFile);
               setUploadedPhotoUrl("");
+
+              if (!nextFile) {
+                setUploadError(null);
+                return;
+              }
+
+              if (!nextFile.type || !nextFile.type.startsWith("image/")) {
+                setUploadError("Выберите файл изображения.");
+                return;
+              }
+
+              if (nextFile.size > 5 * 1024 * 1024) {
+                setUploadError("Размер изображения не должен превышать 5 МБ.");
+                return;
+              }
+
+              setUploadError(null);
             }}
           />
           {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
