@@ -21,33 +21,52 @@ function formatCardDate(value: Date | null) {
 
 export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
   const safeText = text.trim();
+  const initials = title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 
   return (
     <Link
       href={href}
-      className="interactive-lift motion-slide-in group block h-full rounded-xl border border-[#ceb99a] bg-[#fffdf8] p-4 shadow-[0_10px_22px_rgb(66_43_21_/_0.11)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c2f24] focus-visible:ring-offset-2"
+      className="interactive-lift motion-slide-in group block h-full overflow-hidden rounded-2xl border border-[#d6c4a8] bg-[#fffdf9] shadow-[0_8px_20px_rgb(58_39_20_/_0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c2f24] focus-visible:ring-offset-2"
     >
-      <article className="flex h-full flex-col gap-4">
+      <article className="flex h-full flex-col">
         {imageUrl ? (
-          <div className="flex h-52 w-full items-center justify-center overflow-hidden rounded-lg border border-[#cfbea0] bg-[#f7f1e5]">
+          <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover object-center transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               loading="lazy"
             />
           </div>
         ) : (
-          <div className="flex h-32 items-end rounded-lg border border-dashed border-[#d3bea1] bg-gradient-to-br from-[#faf4e7] to-[#f4e7cf] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8c7458]">Профиль участника</p>
+          <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border-b border-[#d9c8ad] bg-gradient-to-br from-[#f7efdf] via-[#f2e7d2] to-[#eadbc3]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_50%)]" />
+            <div className="z-10 flex flex-col items-center gap-2 text-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-[#ccb38e] bg-[#fff8ea] text-xl font-semibold text-[#70543a]">
+                {initials || "?"}
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8b7254]">Фотография отсутствует</p>
+            </div>
           </div>
         )}
-        <div>
-          <h3 className="card-title break-words text-[#3d2d1f]">{title}</h3>
-          {subtitle ? <p className="mt-1 text-sm font-medium text-[#77624d]">{subtitle}</p> : null}
+        <div className="flex h-full flex-col gap-3 p-5">
+          <div>
+            <h3 className="card-title break-words text-[#322112]">{title}</h3>
+            {subtitle ? <p className="mt-1 text-sm font-medium text-[#76614b]">{subtitle}</p> : null}
+          </div>
+          <p className="body-muted flex-1 [overflow-wrap:anywhere]">{safeText}</p>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#6d372b] transition-colors group-hover:text-[#5c281e]">
+            Открыть карточку
+            <span aria-hidden="true" className="text-base leading-none transition-transform duration-200 group-hover:translate-x-0.5">
+              →
+            </span>
+          </span>
         </div>
-        <p className="body-muted flex-1 [overflow-wrap:anywhere]">{safeText}</p>
-        <p className="text-sm font-semibold text-[#6f3b2f]">Открыть карточку →</p>
       </article>
     </Link>
   );
