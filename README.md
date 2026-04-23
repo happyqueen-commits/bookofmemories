@@ -35,24 +35,27 @@ npm run dev
 ```
 
 ## Авторизация и тестовые аккаунты
-- Регистрация нового автора доступна на `/account` (переключатель «Вход / Регистрация»).
-- После регистрации выполняется автоматический вход в личный кабинет.
-- Тестовые аккаунты из seed остаются как дополнительный вариант для демо/проверки:
-- AUTHOR: `author@example.com` / `author123`
-- MODERATOR: `moderator@example.com` / `moderator123`
-- ADMIN: `admin@example.com` / `admin123`
+- Самостоятельная регистрация отключена (`registerAction` в `lib/actions.ts` всегда возвращает ошибку).
+- Вход в `/account` доступен только пользователям с ролями `MODERATOR` и `ADMIN`.
+- Пользователи с другими ролями (в т.ч. `AUTHOR`) не проходят авторизацию через Credentials provider.
+- Тестовые аккаунты из `prisma/seed.ts`:
+  - MODERATOR: `moderator@book.local` / `moderator123`
+  - ADMIN: `admin@book.local` / `admin123`
 
 ## Реализованные маршруты
 - `/`
-- `/memory`, `/memory/[slug]`
-- `/archive`, `/archive/[slug]`
-- `/stories`, `/stories/[slug]`
-- `/chronicle`, `/chronicle/[slug]`
-- `/about`
+- `/memory`
 - `/submit`
+- `/submission-status`
+- `/about`
 - `/account`
 - `/admin`
 - `/api/auth/[...nextauth]`
+
+## Что не входит в MVP сейчас
+- Публичные разделы `/archive`, `/stories`, `/chronicle` и их detail-страницы.
+- Полноценный пользовательский self-signup поток.
+- Эти направления запланированы как следующие этапы после стабилизации текущего MVP.
 
 ## Модерация
 - Автор создает типизированную заявку на `/submit` с `targetEntityType`: `Person`, `ArchiveMaterial`, `Story`, `ChronicleEvent`.
