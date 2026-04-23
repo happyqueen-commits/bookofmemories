@@ -98,6 +98,7 @@ export function TypedSubmitForm() {
     window.localStorage.removeItem(DRAFT_KEY);
   }, [isSubmitted]);
   const fieldLabels: Record<string, string> = {
+    targetEntityType: "Тип материала",
     fullName: "ФИО",
     biography: "Биография",
     shortDescription: "Краткое описание",
@@ -122,7 +123,7 @@ export function TypedSubmitForm() {
   };
 
   const description = useMemo(() => {
-    if (entityType === "Person") return 'Данные о персоне для раздела "Книга участников".';
+    if (entityType === "Person") return 'Данные о персоне для раздела "Книга участников". В этом MVP форма работает для Person.';
     return "";
   }, [entityType]);
 

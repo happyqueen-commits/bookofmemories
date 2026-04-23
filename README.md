@@ -54,12 +54,14 @@ npm run dev
 
 ## Что не входит в MVP сейчас
 - Публичные разделы `/archive`, `/stories`, `/chronicle` и их detail-страницы.
+- Прием и публикация заявок с `targetEntityType` = `ArchiveMaterial` и `ChronicleEvent`.
 - Полноценный пользовательский self-signup поток.
 - Эти направления запланированы как следующие этапы после стабилизации текущего MVP.
 
 ## Модерация
-- Автор создает типизированную заявку на `/submit` с `targetEntityType`: `Person`, `ArchiveMaterial`, `Story`, `ChronicleEvent`.
-- Каждая заявка валидируется как discriminated union по `targetEntityType` (разные обязательные поля для каждого типа).
+- В текущем MVP прием и публикация поддерживаются только для `targetEntityType`: `Person` и `Story`.
+- Для неподдерживаемых типов (`ArchiveMaterial`, `ChronicleEvent`) система возвращает явную ошибку валидации/публикации.
+- Каждая поддерживаемая заявка валидируется как discriminated union по `targetEntityType`.
 - В `Submission.payloadJson` сохраняется полный структурированный payload заявки без потери полей.
 - Заявка попадает в `Submission` со статусом `pending`.
 - Для каждой новой заявки генерируется одноразовый длинный токен доступа к статусу: в БД хранится только `accessTokenHash`, а пользователю показывается только raw-токен в защищенной ссылке.
@@ -68,11 +70,9 @@ npm run dev
 - Модератор/админ на `/admin` переводит в `approved`, `needs_revision` или `rejected`.
 - При `approved` публикация использует реальные данные из `payloadJson` (fallback применяется только для безопасных технических полей, например slug/частей ФИО при разборе).
 
-Формат payload по типам:
-- `Person`: `fullName`, `biography`, `shortDescription?`, `birthDate?`, `deathDate?`, `faculty?`, `department?`.
-- `ArchiveMaterial`: `title`, `description`, `materialType`, `sourceInfo`, `eventDate?`, `tags[]`, `fileUrl?`, `previewImageUrl?` (требуется минимум одно из двух URL-полей).
+Формат payload по поддерживаемым типам:
+- `Person`: `fullName`, `biography`, `shortDescription?`, `birthDate?`, `deathDate?`, `faculty?`, `department?`, `photoUrls[]`.
 - `Story`: `title`, `storyType`, `excerpt`, `content`, `sourceInfo?`.
-- `ChronicleEvent`: `title`, `summary`, `content`, `eventDate`, `coverImageUrl?`.
 
 ## Поиск и фильтрация
 - Поиск реализован в публичных разделах через query параметр `q`.
