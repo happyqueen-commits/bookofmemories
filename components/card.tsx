@@ -29,12 +29,14 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
     >
       <article className="flex h-full flex-col gap-3">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="h-52 w-full rounded-sm object-cover"
-            loading="lazy"
-          />
+          <div className="flex h-52 w-full items-center justify-center overflow-hidden rounded-sm border border-[#cfbea0] bg-[#f7f1e5]">
+            <img
+              src={imageUrl}
+              alt={title}
+              className="h-full w-full object-contain"
+              loading="lazy"
+            />
+          </div>
         ) : null}
         <div>
           <h3 className="card-title break-words text-[#3d2d1f]">{title}</h3>
