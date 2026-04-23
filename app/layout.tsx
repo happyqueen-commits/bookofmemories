@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ru">
       <body className={inter.variable}>
         <Nav />
-        <main className="container-arch py-8">{children}</main>
+        <main className="container-arch py-6 md:py-8">{children}</main>
       </body>
     </html>
   );
