@@ -597,6 +597,20 @@ export async function moderateSubmissionAction(formData: FormData) {
     throw new Error("Недостаточно прав");
   }
 
+  const moderator = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: session.user.id },
+        ...(session.user.email ? [{ email: session.user.email.toLowerCase() }] : [])
+      ]
+    },
+    select: { id: true }
+  });
+
+  if (!moderator) {
+    throw new Error("Пользователь модератора не найден. Перезайдите в аккаунт и попробуйте снова.");
+  }
+
   const rawModerationInput = {
     submissionId: String(formData.get("submissionId") ?? ""),
     status: String(formData.get("status") ?? ""),
@@ -622,7 +636,7 @@ export async function moderateSubmissionAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const submission = await tx.submission.update({
       where: { id: submissionId },
-      data: { status, moderatorComment, moderatorId: session.user.id }
+      data: { status, moderatorComment, moderatorId: moderator.id }
     });
 
     if (status !== ModerationStatus.approved || submission.targetEntityId) {
