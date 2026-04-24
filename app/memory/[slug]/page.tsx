@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { ModerationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
