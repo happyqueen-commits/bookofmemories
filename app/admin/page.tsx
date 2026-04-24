@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ModerationStatus, Role } from "@prisma/client";
 import { moderateSubmissionAction } from "@/lib/actions";
 import { auth } from "@/lib/auth";

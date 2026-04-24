@@ -1,4 +1,6 @@
-const SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL = process.env.SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL;
+import { getSubmissionAccessWebhookUrl } from "@/lib/env";
+
+const SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL = getSubmissionAccessWebhookUrl();
 
 export async function deliverSubmissionAccessCode(email: string, code: string, ttlMinutes: number) {
   if (SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL) {
