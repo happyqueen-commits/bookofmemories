@@ -23,27 +23,39 @@ export async function checkPublicRateLimit(ip: string, action: PublicAction) {
   const limit = LIMITS[action];
   const key = buildKey(ip, action, windowKey);
 
-  const current = await prisma.publicRateLimit.upsert({
-    where: { key },
-    create: {
-      key,
-      ip: ip || "unknown",
+  let currentCount = 1;
+
+  try {
+    const current = await prisma.publicRateLimit.upsert({
+      where: { key },
+      create: {
+        key,
+        ip: ip || "unknown",
+        action,
+        windowKey,
+        count: 1,
+        expiresAt: new Date(now.getTime() + WINDOW_MS)
+      },
+      update: {
+        count: { increment: 1 },
+        expiresAt: new Date(now.getTime() + WINDOW_MS)
+      },
+      select: { count: true }
+    });
+
+    currentCount = current.count;
+  } catch (error) {
+    console.warn("[public-rate-limit] fallback to allow request", {
       action,
-      windowKey,
-      count: 1,
-      expiresAt: new Date(now.getTime() + WINDOW_MS)
-    },
-    update: {
-      count: { increment: 1 },
-      expiresAt: new Date(now.getTime() + WINDOW_MS)
-    },
-    select: { count: true }
-  });
+      ip,
+      error
+    });
+  }
 
   return {
-    allowed: current.count <= limit,
+    allowed: currentCount <= limit,
     limit,
-    current: current.count,
+    current: currentCount,
     retryAfterSeconds: Math.ceil((WINDOW_MS - (now.getTime() % WINDOW_MS)) / 1000)
   };
 }
