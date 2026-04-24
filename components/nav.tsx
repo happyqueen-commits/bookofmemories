@@ -20,7 +20,7 @@ export async function Nav() {
             </Link>
           </div>
           <span className="hidden rounded-full border border-[#cab18d] bg-[#f8f1e3] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-[#6e5a42] md:inline">
-            Мемориальный проект
+            Патриотический проект
           </span>
         </div>
 
