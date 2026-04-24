@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
@@ -130,8 +128,6 @@ export default async function SubmissionStatusPage({
         where: { contactEmail: accessSession.email },
         orderBy: { updatedAt: "desc" }
       });
-    } else {
-      await prisma.submissionAccessSession.deleteMany({ where: { tokenHash: sessionTokenHash } });
     }
   }
 

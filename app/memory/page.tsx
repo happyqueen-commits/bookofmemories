@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { prisma } from "@/lib/prisma";
 import { ModerationStatus } from "@prisma/client";
 import { SearchForm } from "@/components/search-form";

@@ -1,6 +1,6 @@
-import { getAppBaseUrl, getPasswordResetWebhookUrl } from "@/lib/env";
+import { getAppBaseUrl } from "@/lib/env";
 
-const PASSWORD_RESET_EMAIL_WEBHOOK_URL = getPasswordResetWebhookUrl();
+const PASSWORD_RESET_EMAIL_WEBHOOK_URL = process.env.PASSWORD_RESET_EMAIL_WEBHOOK_URL;
 
 export async function deliverPasswordResetToken(email: string, rawToken: string) {
   const baseUrl = getAppBaseUrl();

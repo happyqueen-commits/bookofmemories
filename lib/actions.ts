@@ -198,12 +198,6 @@ export async function forgotPasswordAction(
   _: ForgotPasswordActionState,
   formData: FormData
 ): Promise<ForgotPasswordActionState> {
-  const ip = getClientIpFromHeaders(headers());
-  const rateLimit = await checkPublicRateLimit(ip, "forgotPassword");
-  if (!rateLimit.allowed) {
-    return { status: "error", error: "Слишком много запросов. Попробуйте снова позже." };
-  }
-
   const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
 
   if (!parsed.success) {
@@ -256,12 +250,6 @@ export async function resetPasswordAction(
     };
   }
 
-  const ip = getClientIpFromHeaders(headers());
-  const rateLimit = await checkPublicRateLimit(ip, "resetPassword");
-  if (!rateLimit.allowed) {
-    return { status: "error", error: "Слишком много попыток. Повторите позже." };
-  }
-
   const tokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
   const now = new Date();
   const token = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
@@ -272,14 +260,10 @@ export async function resetPasswordAction(
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
-  const result = await prisma.$transaction([
-    prisma.user.updateMany({ where: { email: token.email }, data: { passwordHash } }),
+  await prisma.$transaction([
+    prisma.user.update({ where: { email: token.email }, data: { passwordHash } }),
     prisma.passwordResetToken.update({ where: { tokenHash }, data: { usedAt: now } })
   ]);
-
-  if (result[0].count === 0) {
-    return { status: "error", error: "Не удалось обновить пароль. Обратитесь к администратору." };
-  }
 
   return { status: "success", message: "Пароль обновлен. Теперь войдите с новым паролем." };
 }

@@ -6,9 +6,7 @@ const LIMITS = {
   upload: 20,
   statusLookup: 40,
   submissionCodeSend: 12,
-  submissionCodeVerify: 60,
-  forgotPassword: 8,
-  resetPassword: 20
+  submissionCodeVerify: 60
 } as const;
 
 type PublicAction = keyof typeof LIMITS;

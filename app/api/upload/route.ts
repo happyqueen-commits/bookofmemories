@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { checkPublicRateLimit } from "@/lib/public-rate-limit";
 import { getClientIpFromHeaders } from "@/lib/login-rate-limit";
 import { validateUploadImage } from "@/lib/upload-validation";
-import { getBlobToken } from "@/lib/env";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!getBlobToken()) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json(
         {
           error:
