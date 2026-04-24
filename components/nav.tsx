@@ -3,13 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { NavLinksClient } from "@/components/nav-links-client";
 
-const publicLinks = [
-  ["/", "Главная"],
-  ["/memory", "Участники"],
-  ["/submit", "Добавить материал"],
-  ["/submission-status", "Статус заявки"],
-  ["/about", "О проекте"]
-] as const;
+import { PUBLIC_NAV_LINKS } from "@/lib/site-config";
 
 export async function Nav() {
   const session = await auth();
@@ -31,7 +25,7 @@ export async function Nav() {
         </div>
 
         <div className="pt-3">
-          <NavLinksClient publicLinks={publicLinks} isAdmin={isAdmin} />
+          <NavLinksClient publicLinks={PUBLIC_NAV_LINKS} isAdmin={isAdmin} />
         </div>
       </div>
     </header>
