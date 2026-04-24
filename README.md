@@ -1,236 +1,154 @@
-# Book of Memories
+# Book of Memories (MVP)
 
-Production-oriented Next.js 14 + Prisma application for publishing and moderating memorial submissions about university participants.
+Мемориально-архивный проект на Next.js + Prisma. Текущий MVP сфокусирован на **персонах** (Person): публичный каталог, карточка участника, публичная отправка материалов, модерация и админ-аутентификация.
 
-## Stack
+## Что реализовано
 
-- Next.js 14 (App Router, Server Actions)
-- TypeScript
-- Prisma + PostgreSQL
-- NextAuth (credentials)
-- Vercel Blob (optional for image upload)
-- PM2 or Docker for deploy
+- Публичные страницы: `/`, `/about`, `/memory`, `/memory/[slug]`, `/submit`, `/submission-status`.
+- Каталог участников и карточки с фото.
+- Публичная форма отправки материалов с модерацией.
+- Подтверждение email и проверка статуса заявки через одноразовый код (email + code).
+- Upload изображений через `/api/upload`.
+- Админ-аутентификация (только `MODERATOR`/`ADMIN`).
+- Панель модерации `/admin`.
+- Восстановление пароля: `/account/forgot-password` → `/account/reset-password?token=...`.
 
-## Key features
+## MVP-ограничения
 
-- Public pages: `/`, `/about`, `/memory`, `/memory/[slug]`, `/submit`, `/submission-status`
-- Public submission flow for `Person`
-- Submission status access via one-time email code
-- Admin moderation panel `/admin`
-- Password reset flow `/account/forgot-password` → `/account/reset-password`
-- Upload API with mime/extension/signature/size checks
-- Rate limits for login, submit, upload, code send/verify, forgot/reset password
-- Health endpoint: `GET /api/health`
+- Поток отправки/автопубликации приведён к честному состоянию: поддерживается только `targetEntityType = Person`.
+- Модели `Story`, `ArchiveMaterial`, `ChronicleEvent` в схеме БД сохранены для будущих этапов, но не участвуют в текущем пользовательском submission-flow.
 
 ---
 
-## Requirements
+## Локальный запуск
 
-- Node.js 20+
-- npm 10+
-- PostgreSQL 14+
-
----
-
-## Environment variables
-
-Use `.env.example` as a template.
-
-### Mandatory
-
-- `DATABASE_URL`
-- `AUTH_SECRET` (minimum 32 characters)
-
-### Mandatory in production (strongly required)
-
-- `NEXTAUTH_URL` (public HTTPS URL)
-- `APP_URL` (fallback absolute URL)
-- `ALLOWED_ORIGINS` (server action origins, comma-separated)
-
-### Runtime (VPS)
-
-- `HOST` (recommended `127.0.0.1` behind nginx)
-- `PORT` (for Next.js server)
-
-### Optional
-
-- `BLOB_READ_WRITE_TOKEN` (for direct upload into Vercel Blob)
-- `PASSWORD_RESET_EMAIL_WEBHOOK_URL`
-- `SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL`
-
-> Secrets are never rendered into client bundle unless explicitly prefixed with `NEXT_PUBLIC_` (not used here).
-
----
-
-## Local setup
+1. Установить зависимости:
 
 ```bash
 npm install
+```
+
+2. Создать `.env` на основе примера:
+
+```bash
 cp .env.example .env
+```
+
+3. Подготовить БД:
+
+```bash
 npm run prisma:generate
-npm run prisma:migrate:deploy
+npx prisma migrate deploy
+```
+
+4. Заполнить демо-данными:
+
+```bash
 npm run prisma:seed
+```
+
+5. Запустить приложение:
+
+```bash
 npm run dev
 ```
 
 ---
 
-## Prisma and PostgreSQL deploy flow
+## Переменные окружения
 
-### First deploy (clean DB)
+См. `.env.example`.
+
+### Обязательные
+
+- `DATABASE_URL` — строка подключения PostgreSQL.
+- `AUTH_SECRET` — секрет Auth.js.
+
+### Рекомендуемые
+
+- `NEXTAUTH_URL` — базовый URL приложения (callback-и, reset-link).
+- `APP_URL` — fallback для абсолютных ссылок (если `NEXTAUTH_URL` не задан).
+
+### Опциональные
+
+- `BLOB_READ_WRITE_TOKEN` — нужен для загрузки изображений в Vercel Blob.
+- `PASSWORD_RESET_EMAIL_WEBHOOK_URL` — webhook для доставки reset-ссылок.
+- `SUBMISSION_ACCESS_EMAIL_WEBHOOK_URL` — webhook для доставки одноразового кода доступа к статусу заявки.
+
+> В development без webhook reset-ссылка логируется сервером для QA.
+
+---
+
+## Prisma, миграции и seed
+
+- Схема: `prisma/schema.prisma`.
+- Миграции: `prisma/migrations/*`.
+- Seed: `prisma/seed.ts`.
+
+Команды:
 
 ```bash
-npm ci
 npm run prisma:generate
-npm run prisma:migrate:deploy
-npm run build
-npm run start -- -H 127.0.0.1 -p 3000
-```
-
-### Subsequent deploys
-
-```bash
-npm ci
-npm run prisma:generate
-npm run prisma:migrate:deploy
-npm run build
-pm2 restart bookofmemories
-```
-
-### Migration policy
-
-- Production: **only** `prisma migrate deploy`
-- Local development: `prisma migrate dev`
-- Avoid `prisma db push` in production
-
-### Seed usage
-
-Seed is for local/demo data and wipes existing data:
-
-```bash
+npm run prisma:migrate
 npm run prisma:seed
 ```
 
-### Create/rotate admin user
+---
 
-```bash
-npm run admin:create -- --email=admin@example.com --password='StrongPass123' --name='Main Admin' --role=ADMIN
-```
+## Безопасность публичной отправки и upload
 
-(also supports `--role=MODERATOR`)
+Реализовано:
+
+- rate limit на публичную отправку (`submit`), upload (`/api/upload`) и lookup статуса;
+- honeypot-поле в публичной форме;
+- проверка формата URL и ограничение количества `photoUrls`;
+- upload принимает только изображения допустимых mime/ext;
+- upload дополнительно проверяет сигнатуру файла (magic bytes);
+- ограничение размера файла (5MB).
+- статус заявки открывается после проверки одноразового кода из email (6 цифр, 15 минут, single-use);
+- повторная отправка кода ограничена cooldown и rate limit.
 
 ---
 
-## Upload and images
+## Проверка статуса заявки (новый flow)
 
-- Upload endpoint: `POST /api/upload`
-- Limits: up to 5 MB
-- Allowed mime/ext: jpg/jpeg/png/webp/gif/avif
-- Content validated by magic bytes
-- Rate limited by IP
-- If `BLOB_READ_WRITE_TOKEN` is missing, API returns `503` and UI can fallback to URL-based image input
-
----
-
-## Moderation flow
-
-1. Public user sends submission via `/submit`
-2. Submission gets `pending`
-3. Moderator/admin opens `/admin`
-4. Set status: `approved` / `needs_revision` / `rejected`
-5. On `approved`, `Person` record is published and linked to submission
+1. Пользователь отправляет заявку на `/submit`.
+2. На указанный email отправляется одноразовый код подтверждения.
+3. Пользователь открывает `/submission-status`, вводит email и код.
+4. После успешной проверки email помечается подтвержденным для заявки, и пользователь видит статусы своих заявок.
+5. При необходимости можно запросить новый код (с ограничением по частоте).
 
 ---
 
-## Submission status confirmation flow
+## Модерация
 
-1. User requests code on `/submission-status`
-2. Code (6 digits) sent to email, TTL 15 minutes
-3. Code hash only is stored in DB
-4. On success, temporary access session cookie is issued
-5. Email is marked verified for linked submissions
+`/admin` доступен только ролям `MODERATOR` и `ADMIN`.
 
-Security hardening included:
-- resend cooldown
-- brute-force protection (`attemptCount`)
-- IP rate limit for send/verify
+- Фильтрация заявок по статусу;
+- статусы: `pending`, `needs_revision`, `approved`, `rejected`;
+- при `approved` заявка `Person` создаёт запись в `Person` и связывается с `Submission.targetEntityId`.
 
 ---
 
-## Password reset flow
+## Восстановление пароля
 
-1. User submits email at `/account/forgot-password`
-2. Raw token is generated; DB stores only SHA-256 hash
-3. Token TTL = 1 hour
-4. Reset URL sent via webhook
-5. Token is single-use (`usedAt` is persisted)
+Поток:
 
----
-
-## Production build and run
-
-```bash
-npm run build
-npm run start -- -H 127.0.0.1 -p 3000
-```
-
-Health check:
-
-```bash
-curl -f http://127.0.0.1:3000/api/health
-```
+1. Пользователь открывает `/account/forgot-password` и указывает email.
+2. Генерируется raw-токен, в БД хранится только SHA-256 hash (`PasswordResetToken.tokenHash`).
+3. Токен живёт 1 час (`expiresAt`).
+4. Ссылка ведёт на существующий маршрут: `/account/reset-password?token=...`.
+5. После успешной смены пароля токен помечается как использованный (`usedAt`) и повторно не применяется.
 
 ---
 
-## PM2 deploy
+## Роли пользователей
 
-Included file: `ecosystem.config.js`
+- `ADMIN` — полный доступ к админке.
+- `MODERATOR` — модерация заявок.
+- `AUTHOR` — роль в модели сохранена, но вход в админский flow не разрешён.
 
-```bash
-npm ci
-npm run build
-npm run prisma:migrate:deploy
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
-```
+Демо-учётки из seed:
 
----
-
-## Docker deploy
-
-Included files: `Dockerfile`, `.dockerignore`
-
-```bash
-docker build -t bookofmemories:latest .
-docker run --env-file .env -p 3000:3000 bookofmemories:latest
-```
-
----
-
-## Recommended VPS deploy order (Node + PostgreSQL + nginx + PM2)
-
-1. Configure PostgreSQL and create DB/user
-2. Fill `.env` with production values (`NEXTAUTH_URL` must be public HTTPS domain)
-3. `npm ci`
-4. `npm run prisma:generate`
-5. `npm run prisma:migrate:deploy`
-6. `npm run build`
-7. `pm2 start ecosystem.config.js`
-8. Configure nginx reverse proxy to `127.0.0.1:3000`
-9. Validate `/api/health`
-
----
-
-## Troubleshooting
-
-- `Invalid environment configuration` on startup:
-  - check missing/invalid env vars (`AUTH_SECRET`, `DATABASE_URL`, URLs)
-- Build fails fetching Google Fonts:
-  - app uses system font fallback; no external font fetch required
-- Upload fails with `503`:
-  - set `BLOB_READ_WRITE_TOKEN` or use URL-based photo field
-- Server actions blocked in production:
-  - add your domain to `ALLOWED_ORIGINS`
-- `prisma migrate deploy` fails:
-  - verify DB permissions and existing migration history
+- `moderator@book.local` / `moderator123`
+- `admin@book.local` / `admin123`

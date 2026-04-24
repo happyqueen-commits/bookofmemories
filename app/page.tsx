@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { Card, formatLifespan } from "@/components/card";
 import { getHomepageData } from "@/lib/content";

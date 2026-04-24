@@ -5,14 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/ensure-env.mjs && next start",
+    "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:migrate:status": "prisma migrate status",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "prisma:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@vercel/blob": "^1.1.1",
