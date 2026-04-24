@@ -18,8 +18,8 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border border-[#ccb18b] bg-[#f3ead9] p-2 shadow-sm">
-        <div className="relative flex h-[360px] w-full items-center justify-center overflow-hidden rounded-lg bg-[#efe4d1] sm:h-[420px] lg:h-[480px]">
-          <Image src={photos[index]} alt={alt} fill className="object-contain" sizes="(max-width: 1024px) 100vw, 40vw" />
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg bg-[#efe4d1]">
+          <Image src={photos[index]} alt={alt} fill className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 40vw" />
         </div>
       </div>
       {hasMany ? (

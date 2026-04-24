@@ -1,12 +1,16 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { submitMaterialAction } from "@/lib/actions";
 
 const baseInputClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
 const DRAFT_KEY = "submit_person_draft_v1";
+const MAX_INPUT_IMAGE_BYTES = 5 * 1024 * 1024;
+const OUTPUT_WIDTH = 1200;
+const OUTPUT_HEIGHT = 1500;
+const OUTPUT_QUALITY = 0.88;
 
 type DraftState = {
   contactName: string;
@@ -19,6 +23,11 @@ type DraftState = {
   department: string;
   shortDescription: string;
   photoUrls: string;
+};
+
+type LoadedImageSize = {
+  width: number;
+  height: number;
 };
 
 const defaultDraft: DraftState = {
@@ -49,8 +58,75 @@ function SubmitButton() {
   );
 }
 
+function fileToObjectUrl(file: File) {
+  return URL.createObjectURL(file);
+}
+
+async function getImageSize(fileUrl: string): Promise<LoadedImageSize> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("Не удалось прочитать изображение."));
+    img.src = fileUrl;
+  });
+}
+
+async function renderCroppedImage(params: {
+  imageUrl: string;
+  imageSize: LoadedImageSize;
+  frameSize: LoadedImageSize;
+  offsetX: number;
+  offsetY: number;
+  zoom: number;
+  rotation: number;
+}): Promise<File> {
+  const { imageUrl, imageSize, frameSize, offsetX, offsetY, zoom, rotation } = params;
+  const image = new Image();
+  image.src = imageUrl;
+
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("Не удалось подготовить изображение."));
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = OUTPUT_WIDTH;
+  canvas.height = OUTPUT_HEIGHT;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Браузер не поддерживает обработку изображений.");
+  }
+
+  const frameScale = OUTPUT_WIDTH / frameSize.width;
+  const baseScale = Math.max(frameSize.width / imageSize.width, frameSize.height / imageSize.height);
+  const totalScale = baseScale * zoom * frameScale;
+
+  ctx.fillStyle = "#f8f5ef";
+  ctx.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+
+  ctx.save();
+  ctx.translate(OUTPUT_WIDTH / 2 + offsetX * frameScale, OUTPUT_HEIGHT / 2 + offsetY * frameScale);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.scale(totalScale, totalScale);
+  ctx.drawImage(image, -imageSize.width / 2, -imageSize.height / 2, imageSize.width, imageSize.height);
+  ctx.restore();
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", OUTPUT_QUALITY));
+  if (!blob) {
+    throw new Error("Не удалось сохранить итоговое изображение.");
+  }
+
+  return new File([blob], "person-photo.jpg", { type: "image/jpeg" });
+}
+
 export function TypedSubmitForm() {
   const searchParams = useSearchParams();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cropFrameRef = useRef<HTMLDivElement | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragBaseOffsetRef = useRef<{ x: number; y: number } | null>(null);
+
   const errorField = searchParams.get("field");
   const errorMessage = searchParams.get("message");
   const errorLine = searchParams.get("line");
@@ -77,6 +153,17 @@ export function TypedSubmitForm() {
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  const [sourcePhotoFile, setSourcePhotoFile] = useState<File | null>(null);
+  const [sourcePhotoUrl, setSourcePhotoUrl] = useState<string | null>(null);
+  const [finalPreviewUrl, setFinalPreviewUrl] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropRotation, setCropRotation] = useState(0);
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+  const [imageSize, setImageSize] = useState<LoadedImageSize | null>(null);
+  const [frameSize, setFrameSize] = useState<LoadedImageSize | null>(null);
+  const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+
   useEffect(() => {
     const raw = window.localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
@@ -92,16 +179,49 @@ export function TypedSubmitForm() {
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [draft]);
 
-
-
   useEffect(() => {
     if (!isSubmitted) return;
     setDraft({ ...defaultDraft });
     setPhotoFile(null);
+    setSourcePhotoFile(null);
     setUploadedPhotoUrl("");
     setUploadError(null);
+    setSourcePhotoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setFinalPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     window.localStorage.removeItem(DRAFT_KEY);
   }, [isSubmitted]);
+
+  useEffect(() => {
+    return () => {
+      if (sourcePhotoUrl) URL.revokeObjectURL(sourcePhotoUrl);
+      if (finalPreviewUrl) URL.revokeObjectURL(finalPreviewUrl);
+    };
+  }, [sourcePhotoUrl, finalPreviewUrl]);
+
+  useEffect(() => {
+    if (!cropFrameRef.current) return;
+
+    const frame = cropFrameRef.current;
+    const updateFrameSize = () => {
+      const rect = frame.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        setFrameSize({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateFrameSize();
+    const observer = new ResizeObserver(updateFrameSize);
+    observer.observe(frame);
+
+    return () => observer.disconnect();
+  }, [isCropperOpen]);
+
   const fieldLabels: Record<string, string> = {
     targetEntityType: "Тип материала",
     fullName: "ФИО",
@@ -165,7 +285,135 @@ export function TypedSubmitForm() {
     }
   };
 
+  const resetPhotoState = () => {
+    setPhotoFile(null);
+    setSourcePhotoFile(null);
+    setUploadedPhotoUrl("");
+    setUploadError(null);
+    setImageSize(null);
+    setCropOffset({ x: 0, y: 0 });
+    setCropRotation(0);
+    setCropZoom(1);
+    setIsCropperOpen(false);
+    setSourcePhotoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setFinalPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleNewFile = async (nextFile: File | null) => {
+    setUploadedPhotoUrl("");
+
+    if (!nextFile) {
+      resetPhotoState();
+      return;
+    }
+
+    if (!nextFile.type || !nextFile.type.startsWith("image/")) {
+      setUploadError("Выберите файл изображения.");
+      return;
+    }
+
+    if (nextFile.size > MAX_INPUT_IMAGE_BYTES) {
+      setUploadError("Размер изображения не должен превышать 5 МБ.");
+      return;
+    }
+
+    const nextSourceUrl = fileToObjectUrl(nextFile);
+
+    try {
+      const nextImageSize = await getImageSize(nextSourceUrl);
+      setUploadError(null);
+      setSourcePhotoFile(nextFile);
+      setPhotoFile(null);
+      setImageSize(nextImageSize);
+      setCropOffset({ x: 0, y: 0 });
+      setCropRotation(0);
+      setCropZoom(1);
+      setSourcePhotoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return nextSourceUrl;
+      });
+      setFinalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setIsCropperOpen(true);
+    } catch (error) {
+      URL.revokeObjectURL(nextSourceUrl);
+      setUploadError(error instanceof Error ? error.message : "Не удалось открыть изображение.");
+    }
+  };
+
+  const handleCropConfirm = async () => {
+    if (!sourcePhotoUrl || !imageSize || !frameSize) {
+      setUploadError("Не удалось подготовить изображение к кадрированию.");
+      return;
+    }
+
+    setIsProcessingCrop(true);
+    setUploadError(null);
+    try {
+      const processedFile = await renderCroppedImage({
+        imageUrl: sourcePhotoUrl,
+        imageSize,
+        frameSize,
+        offsetX: cropOffset.x,
+        offsetY: cropOffset.y,
+        zoom: cropZoom,
+        rotation: cropRotation
+      });
+
+      const nextPreviewUrl = fileToObjectUrl(processedFile);
+      setPhotoFile(processedFile);
+      setUploadedPhotoUrl("");
+      setFinalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return nextPreviewUrl;
+      });
+      setIsCropperOpen(false);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Не удалось обработать изображение.");
+    } finally {
+      setIsProcessingCrop(false);
+    }
+  };
+
+  const handleCropDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isCropperOpen) return;
+    dragStartRef.current = { x: event.clientX, y: event.clientY };
+    dragBaseOffsetRef.current = { ...cropOffset };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleCropDragMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current || !dragBaseOffsetRef.current) return;
+    const deltaX = event.clientX - dragStartRef.current.x;
+    const deltaY = event.clientY - dragStartRef.current.y;
+    setCropOffset({ x: dragBaseOffsetRef.current.x + deltaX, y: dragBaseOffsetRef.current.y + deltaY });
+  };
+
+  const handleCropDragEnd = () => {
+    dragStartRef.current = null;
+    dragBaseOffsetRef.current = null;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    if (sourcePhotoFile && !photoFile) {
+      event.preventDefault();
+      setUploadError("Подтвердите кадрирование изображения перед отправкой формы.");
+      setIsCropperOpen(true);
+      return;
+    }
+
     if (!photoFile || uploadedPhotoUrl) return;
 
     event.preventDefault();
@@ -191,6 +439,9 @@ export function TypedSubmitForm() {
 
     form.requestSubmit();
   };
+
+  const canRenderCropper = Boolean(sourcePhotoUrl && imageSize && frameSize);
+  const cropBaseScale = imageSize && frameSize ? Math.max(frameSize.width / imageSize.width, frameSize.height / imageSize.height) : 1;
 
   return (
     <form action={submitMaterialAction} onSubmit={handleSubmit} className="space-y-4 rounded border border-slate-300 bg-white p-4">
@@ -268,40 +519,94 @@ export function TypedSubmitForm() {
           <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: Профессор кафедры, автор учебников по вычислительной математике" />
           {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
         </label>
+
         <label className="mt-6 block">
           Фотофайл <span className="text-slate-500">(необязательно, до 5 МБ)</span>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             className={baseInputClass}
             onChange={(event) => {
-              const nextFile = event.target.files?.[0] ?? null;
-              setPhotoFile(nextFile);
-              setUploadedPhotoUrl("");
-
-              if (!nextFile) {
-                setUploadError(null);
-                return;
-              }
-
-              if (!nextFile.type || !nextFile.type.startsWith("image/")) {
-                setUploadError("Выберите файл изображения.");
-                return;
-              }
-
-              if (nextFile.size > 5 * 1024 * 1024) {
-                setUploadError("Размер изображения не должен превышать 5 МБ.");
-                return;
-              }
-
-              setUploadError(null);
+              void handleNewFile(event.target.files?.[0] ?? null);
             }}
           />
           <span className="mt-1 block text-xs text-slate-600">
-            Поддерживаются распространённые форматы изображений (JPG, PNG, WEBP и другие). Фото автоматически впишется в карточку без растягивания.
+            Шаг 1: выберите фото. Шаг 2: подгоните изображение в рамке 4:5. Шаг 3: подтвердите кадрирование и проверьте превью.
           </span>
           {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
         </label>
+
+        {isCropperOpen && sourcePhotoUrl ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-sm font-medium text-slate-800">Подгоните изображение под формат карточки</p>
+            <p className="mt-1 text-xs text-slate-600">Переместите и увеличьте фото так, как оно должно отображаться в карточке.</p>
+
+            <div
+              ref={cropFrameRef}
+              className="relative mt-3 aspect-[4/5] w-full max-w-sm touch-none overflow-hidden rounded-lg border border-slate-300 bg-slate-100"
+              onPointerDown={handleCropDragStart}
+              onPointerMove={handleCropDragMove}
+              onPointerUp={handleCropDragEnd}
+              onPointerCancel={handleCropDragEnd}
+            >
+              {canRenderCropper ? (
+                <img
+                  src={sourcePhotoUrl}
+                  alt="Предпросмотр кадрирования"
+                  className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
+                  style={{
+                    width: `${imageSize?.width ?? 0}px`,
+                    height: `${imageSize?.height ?? 0}px`,
+                    transform: `translate(-50%, -50%) translate(${cropOffset.x}px, ${cropOffset.y}px) rotate(${cropRotation}deg) scale(${cropBaseScale * cropZoom})`,
+                    transformOrigin: "center"
+                  }}
+                />
+              ) : null}
+              <div className="pointer-events-none absolute inset-0 border-[3px] border-white/80 shadow-[inset_0_0_0_9999px_rgba(15,23,42,0.3)]" />
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-slate-700">
+                Масштаб: {cropZoom.toFixed(2)}x
+                <input type="range" min={1} max={3} step={0.01} className="mt-1 w-full" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} />
+              </label>
+              <label className="text-sm text-slate-700">
+                Поворот: {cropRotation}°
+                <input type="range" min={-45} max={45} step={1} className="mt-1 w-full" value={cropRotation} onChange={(event) => setCropRotation(Number(event.target.value))} />
+              </label>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={handleCropConfirm} disabled={isProcessingCrop || !frameSize} className="rounded bg-slate-800 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70">
+                {isProcessingCrop ? "Обрабатываем..." : "Подтвердить кадрирование"}
+              </button>
+              <button type="button" onClick={() => setIsCropperOpen(false)} className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700">
+                Скрыть редактор
+              </button>
+              <button type="button" onClick={resetPhotoState} className="rounded border border-red-200 px-3 py-2 text-sm text-red-700">
+                Удалить изображение
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {finalPreviewUrl ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-sm font-medium text-emerald-900">Итоговое изображение для отправки</p>
+            <div className="mt-2 w-full max-w-[220px] overflow-hidden rounded-lg border border-emerald-200 bg-white">
+              <img src={finalPreviewUrl} alt="Итоговое превью" className="aspect-[4/5] h-auto w-full object-cover" />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={() => setIsCropperOpen(true)} className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700">
+                Изменить кадрирование
+              </button>
+              <button type="button" onClick={resetPhotoState} className="rounded border border-red-200 px-3 py-2 text-sm text-red-700">
+                Удалить изображение
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {isUploadingPhoto ? <p className="text-sm text-slate-600">Загружаем изображение…</p> : null}
