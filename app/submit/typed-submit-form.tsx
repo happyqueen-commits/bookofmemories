@@ -132,7 +132,7 @@ export function TypedSubmitForm() {
   const errorLine = searchParams.get("line");
   const isInvalidForm = searchParams.get("error") === "invalid_form";
   const isSubmitted = searchParams.get("success") === "submitted";
-  const hasStatusToken = Boolean(searchParams.get("statusToken"));
+  const hasCodeSent = searchParams.get("codeSent") === "1";
 
   const queryDraft: Partial<DraftState> = {
     contactName: searchParams.get("contactName") ?? undefined,
@@ -455,7 +455,7 @@ export function TypedSubmitForm() {
       {isSubmitted ? (
         <p className="rounded border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           Материал успешно отправлен. Форма очищена.
-          {hasStatusToken ? " Ниже доступна защищенная ссылка для проверки статуса." : ""}
+          {hasCodeSent ? " Мы отправили код подтверждения на указанный email." : ""}
         </p>
       ) : null}
 
