@@ -4,7 +4,7 @@ import { EntityType, ModerationStatus, Role, SubmissionType } from "@prisma/clie
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { AuthError } from "next-auth";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { getClientIpFromHeaders, getLoginRateLimitState } from "@/lib/login-rate
 import { passwordSchema } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
 import { deliverPasswordResetToken } from "@/lib/password-reset-delivery";
+import { deliverSubmissionAccessCode } from "@/lib/submission-access-delivery";
 import { parsePersonName } from "@/lib/person-name";
 import { generateUniquePersonSlug } from "@/lib/slug";
 import { checkPublicRateLimit } from "@/lib/public-rate-limit";
@@ -87,13 +88,26 @@ const submitContactSchema = z.object({
   contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
 });
 
+const submissionCodeRequestSchema = z.object({
+  email: z.string().trim().email("Укажите корректный email.")
+});
+
+const submissionCodeVerifySchema = z.object({
+  email: z.string().trim().email("Укажите корректный email."),
+  code: z.string().trim().regex(/^\d{6}$/, "Введите шестизначный код.")
+});
+
 const moderateSchema = z.object({
   submissionId: z.string().cuid(),
   status: z.enum(["approved", "needs_revision", "rejected"]),
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
 
-const SUBMISSION_ACCESS_TOKEN_TTL_DAYS = 30;
+const SUBMISSION_ACCESS_CODE_TTL_MINUTES = 15;
+const SUBMISSION_ACCESS_CODE_COOLDOWN_SECONDS = 60;
+const SUBMISSION_ACCESS_CODE_MAX_ATTEMPTS = 5;
+const SUBMISSION_SESSION_TTL_MINUTES = 30;
+const SUBMISSION_STATUS_SESSION_COOKIE = "submission_status_session";
 
 export type RegisterActionState = {
   status: "idle" | "error" | "success";
@@ -258,6 +272,83 @@ export async function logoutAction() {
   await signOut({ redirectTo: "/" });
 }
 
+function generateSubmissionAccessCode() {
+  return crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+}
+
+async function issueSubmissionAccessCode(email: string) {
+  const now = new Date();
+  const normalizedEmail = email.toLowerCase();
+  const submissions = await prisma.submission.findMany({
+    where: { contactEmail: normalizedEmail },
+    select: { id: true }
+  });
+
+  if (submissions.length === 0) {
+    return { sent: false as const, reason: "not_found" as const };
+  }
+
+  const latestCode = await prisma.submissionAccessCode.findFirst({
+    where: {
+      email: normalizedEmail,
+      usedAt: null,
+      invalidatedAt: null,
+      expiresAt: { gt: now }
+    },
+    orderBy: { createdAt: "desc" },
+    select: { lastSentAt: true }
+  });
+
+  if (latestCode) {
+    const diffMs = now.getTime() - latestCode.lastSentAt.getTime();
+    if (diffMs < SUBMISSION_ACCESS_CODE_COOLDOWN_SECONDS * 1000) {
+      return {
+        sent: false as const,
+        reason: "cooldown" as const,
+        retryAfterSeconds: Math.ceil((SUBMISSION_ACCESS_CODE_COOLDOWN_SECONDS * 1000 - diffMs) / 1000)
+      };
+    }
+  }
+
+  const sentLastHour = await prisma.submissionAccessCode.count({
+    where: {
+      email: normalizedEmail,
+      createdAt: { gte: new Date(now.getTime() - 60 * 60 * 1000) }
+    }
+  });
+  if (sentLastHour >= 10) {
+    return { sent: false as const, reason: "email_limit" as const };
+  }
+
+  const code = generateSubmissionAccessCode();
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const expiresAt = new Date(now.getTime() + SUBMISSION_ACCESS_CODE_TTL_MINUTES * 60 * 1000);
+
+  await prisma.$transaction([
+    prisma.submissionAccessCode.updateMany({
+      where: {
+        email: normalizedEmail,
+        usedAt: null,
+        invalidatedAt: null,
+        expiresAt: { gt: now }
+      },
+      data: { invalidatedAt: now }
+    }),
+    prisma.submissionAccessCode.createMany({
+      data: submissions.map((submission) => ({
+        submissionId: submission.id,
+        email: normalizedEmail,
+        codeHash,
+        expiresAt,
+        lastSentAt: now
+      }))
+    })
+  ]);
+
+  await deliverSubmissionAccessCode(normalizedEmail, code, SUBMISSION_ACCESS_CODE_TTL_MINUTES);
+  return { sent: true as const };
+}
+
 export async function submitMaterialAction(formData: FormData) {
   const requestHeaders = headers();
   const ip = getClientIpFromHeaders(requestHeaders);
@@ -325,17 +416,11 @@ export async function submitMaterialAction(formData: FormData) {
 
   const normalizedEmail = contactParsed.data.contactEmail.toLowerCase();
 
-  const rawAccessToken = crypto.randomBytes(32).toString("base64url");
-  const accessTokenHash = crypto.createHash("sha256").update(rawAccessToken).digest("hex");
-  const accessTokenExpiresAt = new Date(Date.now() + SUBMISSION_ACCESS_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
-
   await prisma.submission.create({
     data: {
       authorId: null,
       contactName: contactParsed.data.contactName,
       contactEmail: normalizedEmail,
-      accessTokenHash,
-      accessTokenExpiresAt,
       payloadJson: {
         ...parsed.data,
         website: undefined
@@ -350,11 +435,144 @@ export async function submitMaterialAction(formData: FormData) {
   revalidatePath("/submission-status");
   revalidatePath("/admin");
 
+  try {
+    await issueSubmissionAccessCode(normalizedEmail);
+  } catch (error) {
+    console.error("[submission-access] failed to send initial code", error);
+  }
+
   const successParams = new URLSearchParams({
     success: "submitted",
-    statusToken: rawAccessToken
+    codeSent: "1",
+    email: normalizedEmail
   });
   redirect(`/submit?${successParams.toString()}`);
+}
+
+export async function requestSubmissionStatusCodeAction(formData: FormData) {
+  const parsed = submissionCodeRequestSchema.safeParse({
+    email: formData.get("email")
+  });
+
+  if (!parsed.success) {
+    redirect("/submission-status?codeRequestError=invalid_email");
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const ip = getClientIpFromHeaders(headers());
+  const rateLimit = await checkPublicRateLimit(ip, "submissionCodeSend");
+  if (!rateLimit.allowed) {
+    redirect(`/submission-status?email=${encodeURIComponent(email)}&codeRequestError=too_many_requests`);
+  }
+
+  try {
+    const result = await issueSubmissionAccessCode(email);
+    if (!result.sent) {
+      if (result.reason === "cooldown") {
+        redirect(
+          `/submission-status?email=${encodeURIComponent(email)}&codeRequestError=cooldown&retryAfter=${result.retryAfterSeconds ?? SUBMISSION_ACCESS_CODE_COOLDOWN_SECONDS}`
+        );
+      }
+      if (result.reason === "email_limit") {
+        redirect(`/submission-status?email=${encodeURIComponent(email)}&codeRequestError=email_limit`);
+      }
+      redirect(`/submission-status?email=${encodeURIComponent(email)}&codeRequested=1`);
+    }
+  } catch (error) {
+    console.error("[submission-access] Failed to send code", error);
+    redirect(`/submission-status?email=${encodeURIComponent(email)}&codeRequestError=delivery_failed`);
+  }
+
+  redirect(`/submission-status?email=${encodeURIComponent(email)}&codeRequested=1`);
+}
+
+export async function verifySubmissionStatusCodeAction(formData: FormData) {
+  const parsed = submissionCodeVerifySchema.safeParse({
+    email: formData.get("email"),
+    code: formData.get("code")
+  });
+
+  if (!parsed.success) {
+    redirect("/submission-status?verifyError=invalid_input");
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const code = parsed.data.code;
+  const now = new Date();
+  const ip = getClientIpFromHeaders(headers());
+  const rateLimit = await checkPublicRateLimit(ip, "submissionCodeVerify");
+  if (!rateLimit.allowed) {
+    redirect(`/submission-status?email=${encodeURIComponent(email)}&verifyError=too_many_attempts`);
+  }
+
+  const activeCodes = await prisma.submissionAccessCode.findMany({
+    where: {
+      email,
+      usedAt: null,
+      invalidatedAt: null,
+      expiresAt: { gt: now }
+    },
+    select: {
+      id: true,
+      codeHash: true,
+      attemptCount: true,
+      submissionId: true
+    }
+  });
+
+  if (activeCodes.length === 0) {
+    redirect(`/submission-status?email=${encodeURIComponent(email)}&verifyError=expired`);
+  }
+
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const matchedCodes = activeCodes.filter(
+    (accessCode) => accessCode.codeHash === codeHash && accessCode.attemptCount < SUBMISSION_ACCESS_CODE_MAX_ATTEMPTS
+  );
+
+  if (matchedCodes.length === 0) {
+    await prisma.submissionAccessCode.updateMany({
+      where: {
+        id: { in: activeCodes.map((accessCode) => accessCode.id) },
+        attemptCount: { lt: SUBMISSION_ACCESS_CODE_MAX_ATTEMPTS }
+      },
+      data: { attemptCount: { increment: 1 } }
+    });
+    redirect(`/submission-status?email=${encodeURIComponent(email)}&verifyError=invalid_code`);
+  }
+
+  const rawSessionToken = crypto.randomBytes(32).toString("base64url");
+  const sessionTokenHash = crypto.createHash("sha256").update(rawSessionToken).digest("hex");
+  const sessionExpiresAt = new Date(now.getTime() + SUBMISSION_SESSION_TTL_MINUTES * 60 * 1000);
+  const submissionIds = Array.from(new Set(matchedCodes.map((codeEntry) => codeEntry.submissionId)));
+
+  await prisma.$transaction([
+    prisma.submissionAccessCode.updateMany({
+      where: { id: { in: matchedCodes.map((accessCode) => accessCode.id) } },
+      data: { usedAt: now }
+    }),
+    prisma.submission.updateMany({
+      where: { id: { in: submissionIds } },
+      data: { emailVerifiedAt: now }
+    }),
+    prisma.submissionAccessSession.create({
+      data: {
+        email,
+        tokenHash: sessionTokenHash,
+        expiresAt: sessionExpiresAt
+      }
+    })
+  ]);
+
+  const cookieStore = await cookies();
+  cookieStore.set(SUBMISSION_STATUS_SESSION_COOKIE, rawSessionToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: sessionExpiresAt
+  });
+
+  redirect("/submission-status?verified=1");
 }
 
 export async function moderateSubmissionAction(formData: FormData) {

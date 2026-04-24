@@ -146,8 +146,7 @@ model Submission {
   submissionType   SubmissionType
   targetEntityType EntityType
   targetEntityId   String?
-  accessTokenHash  String?
-  accessTokenExpiresAt DateTime?
+  emailVerifiedAt  DateTime?
   payloadJson      Json
   status           ModerationStatus @default(pending)
   moderatorComment String?
@@ -160,10 +159,40 @@ model Submission {
 
   author           User?            @relation("AuthorSubmissions", fields: [authorId], references: [id])
   moderator        User?            @relation("ModeratorSubmissions", fields: [moderatorId], references: [id])
+  accessCodes      SubmissionAccessCode[]
 
   @@index([contactEmail])
-  @@index([accessTokenHash])
-  @@index([contactEmail, accessTokenHash])
+  @@index([emailVerifiedAt])
+}
+
+model SubmissionAccessCode {
+  id            String     @id @default(cuid())
+  submissionId  String
+  email         String
+  codeHash      String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  invalidatedAt DateTime?
+  attemptCount  Int        @default(0)
+  lastSentAt    DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, email])
+  @@index([email, expiresAt])
+  @@index([codeHash])
+}
+
+model SubmissionAccessSession {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
 }
 
 

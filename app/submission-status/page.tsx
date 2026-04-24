@@ -1,10 +1,9 @@
 import Link from "next/link";
 import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getEntityTypeLabel } from "@/lib/entity-labels";
-import { checkPublicRateLimit } from "@/lib/public-rate-limit";
-import { getClientIpFromHeaders } from "@/lib/login-rate-limit";
-import { headers } from "next/headers";
+import { requestSubmissionStatusCodeAction, verifySubmissionStatusCodeAction } from "@/lib/actions";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "На рассмотрении",
@@ -14,106 +13,191 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "Черновик"
 };
 
+const SUBMISSION_STATUS_SESSION_COOKIE = "submission_status_session";
+
+type StatusSearchParams = {
+  email?: string;
+  codeRequested?: string;
+  codeRequestError?: string;
+  retryAfter?: string;
+  verifyError?: string;
+  verified?: string;
+};
+
+function renderCodeRequestMessage(error?: string, retryAfter?: string) {
+  if (!error) return null;
+
+  if (error === "cooldown") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Новый код можно запросить чуть позже. Повторите через {retryAfter ?? "60"} сек.
+      </p>
+    );
+  }
+
+  if (error === "too_many_requests") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Слишком много запросов. Попробуйте снова позже.
+      </p>
+    );
+  }
+
+  if (error === "email_limit") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Для этого email достигнут лимит отправки кодов. Попробуйте снова через час.
+      </p>
+    );
+  }
+
+  if (error === "delivery_failed") {
+    return (
+      <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        Не удалось отправить письмо с кодом. Попробуйте еще раз позже.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      Укажите корректный email.
+    </p>
+  );
+}
+
+function renderVerifyMessage(error?: string) {
+  if (!error) return null;
+
+  if (error === "invalid_code") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Код недействителен или истек. Проверьте письмо или запросите новый код.
+      </p>
+    );
+  }
+
+  if (error === "expired") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Активный код не найден. Запросите новый код для доступа к статусу.
+      </p>
+    );
+  }
+
+  if (error === "too_many_attempts") {
+    return (
+      <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        Слишком много попыток ввода. Попробуйте позже.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      Проверьте email и код подтверждения.
+    </p>
+  );
+}
+
 export default async function SubmissionStatusPage({
   searchParams
 }: {
-  searchParams?: Promise<{ email?: string; token?: string }>;
+  searchParams?: Promise<StatusSearchParams>;
 }) {
   const params = (await searchParams) ?? {};
   const email = (params.email ?? "").trim().toLowerCase();
-  const token = (params.token ?? "").trim();
-  const now = new Date();
 
-  let refreshedToken: string | null = null;
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(SUBMISSION_STATUS_SESSION_COOKIE)?.value;
+
   let submissions: Awaited<ReturnType<typeof prisma.submission.findMany>> = [];
+  let verifiedEmail: string | null = null;
 
-  if (token) {
-    const ip = getClientIpFromHeaders(headers());
-    const rateLimit = await checkPublicRateLimit(ip, "statusLookup");
-    if (!rateLimit.allowed) {
-      return (
-        <div>
-          <h1 className="text-2xl font-semibold">Статус поданных материалов</h1>
-          <p className="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Слишком много запросов. Повторите позже.
-          </p>
-        </div>
-      );
-    }
-    const accessTokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    submissions = await prisma.submission.findMany({
-      where: {
-        accessTokenHash,
-        accessTokenExpiresAt: { gt: now },
-        ...(email ? { contactEmail: email } : {})
-      },
-      orderBy: { updatedAt: "desc" }
+  if (sessionToken) {
+    const sessionTokenHash = crypto.createHash("sha256").update(sessionToken).digest("hex");
+    const now = new Date();
+    const accessSession = await prisma.submissionAccessSession.findUnique({
+      where: { tokenHash: sessionTokenHash },
+      select: { email: true, expiresAt: true }
     });
 
-    if (submissions.length > 0) {
-      refreshedToken = crypto.randomBytes(32).toString("base64url");
-      const refreshedHash = crypto.createHash("sha256").update(refreshedToken).digest("hex");
-      const refreshedExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-      await prisma.submission.updateMany({
-        where: { id: { in: submissions.map((submission) => submission.id) } },
-        data: {
-          accessTokenHash: refreshedHash,
-          accessTokenExpiresAt: refreshedExpiresAt
-        }
+    if (accessSession && accessSession.expiresAt > now) {
+      verifiedEmail = accessSession.email;
+      submissions = await prisma.submission.findMany({
+        where: { contactEmail: accessSession.email },
+        orderBy: { updatedAt: "desc" }
       });
     }
   }
 
-  const hasValidToken = submissions.length > 0;
-  const hasLookupAttempt = Boolean(token || email);
+  const hasAccess = Boolean(verifiedEmail);
 
   return (
     <div>
       <h1 className="text-2xl font-semibold">Статус поданных материалов</h1>
-      <p className="mt-2 text-slate-700">Введите токен из защищенной ссылки. Email можно указать дополнительно для точного поиска.</p>
+      <p className="mt-2 text-slate-700">Введите email, получите одноразовый код и подтвердите доступ к заявке.</p>
 
-      <form method="get" className="mt-4 flex flex-col gap-3 rounded border border-slate-300 bg-white p-4 sm:flex-row sm:items-end">
-        <label className="block flex-1">
-          Токен доступа
-          <input
-            name="token"
-            required
-            defaultValue={token}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-            placeholder="Вставьте токен из ссылки"
-          />
-        </label>
-        <label className="block flex-1">
-          Email (необязательно)
-          <input
-            name="email"
-            type="email"
-            defaultValue={email}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-            placeholder="author@example.com"
-          />
-        </label>
-        <button className="rounded bg-slate-800 px-4 py-2 text-white">Показать статус</button>
-      </form>
+      {!hasAccess ? (
+        <div className="mt-4 space-y-4">
+          <form action={requestSubmissionStatusCodeAction} className="rounded border border-slate-300 bg-white p-4">
+            <label className="block">
+              Email
+              <input
+                name="email"
+                type="email"
+                required
+                defaultValue={email}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+                placeholder="author@example.com"
+              />
+            </label>
+            <button className="mt-3 rounded bg-slate-800 px-4 py-2 text-white">Отправить код</button>
+            {params.codeRequested === "1" ? (
+              <p className="mt-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                Если заявка с этим email найдена, мы отправили код подтверждения на почту.
+              </p>
+            ) : null}
+            {renderCodeRequestMessage(params.codeRequestError, params.retryAfter)}
+          </form>
 
-      {hasLookupAttempt && !hasValidToken ? (
-        <p className="mt-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Не удалось подтвердить доступ. Проверьте токен и попробуйте снова.
-        </p>
-      ) : null}
-
-      {hasValidToken ? (
+          <form action={verifySubmissionStatusCodeAction} className="rounded border border-slate-300 bg-white p-4">
+            <p className="text-sm text-slate-700">Введите код из письма, чтобы подтвердить email и открыть статус заявки.</p>
+            <label className="mt-3 block">
+              Email
+              <input
+                name="email"
+                type="email"
+                required
+                defaultValue={email}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+                placeholder="author@example.com"
+              />
+            </label>
+            <label className="mt-3 block">
+              Код подтверждения
+              <input
+                name="code"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+                placeholder="123456"
+              />
+            </label>
+            <button className="mt-3 rounded bg-slate-800 px-4 py-2 text-white">Подтвердить и показать статус</button>
+            {renderVerifyMessage(params.verifyError)}
+          </form>
+        </div>
+      ) : (
         <div className="mt-4 space-y-3">
-          {refreshedToken ? (
-            <p className="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-              Для безопасности ссылка обновлена. Используйте новую ссылку:{" "}
-              <Link href={`/submission-status?token=${encodeURIComponent(refreshedToken)}`} className="underline">
-                открыть статус
-              </Link>
-              .
+          {params.verified === "1" ? (
+            <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              Email подтвержден. Ниже показан актуальный статус ваших заявок.
             </p>
           ) : null}
+          <p className="text-sm text-slate-600">Подтвержденный email: {verifiedEmail}</p>
           {submissions.map((submission) => (
             <article key={submission.id} className="rounded border border-slate-300 bg-white p-3">
               <p className="text-sm text-slate-500">{getEntityTypeLabel(submission.targetEntityType)}</p>
@@ -125,8 +209,12 @@ export default async function SubmissionStatusPage({
               {submission.moderatorComment ? <p className="mt-2 text-sm">Комментарий модератора: {submission.moderatorComment}</p> : null}
             </article>
           ))}
+          <form action={requestSubmissionStatusCodeAction} className="rounded border border-slate-200 bg-slate-50 p-3">
+            <input type="hidden" name="email" value={verifiedEmail ?? ""} />
+            <button className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700">Отправить код повторно</button>
+          </form>
         </div>
-      ) : null}
+      )}
 
       <p className="mt-6 text-sm text-slate-600">
         Хотите отправить новый материал? <Link href="/submit" className="underline">Перейти к форме отправки</Link>.
