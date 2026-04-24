@@ -36,7 +36,7 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
     >
       <article className="flex h-full flex-col">
         {imageUrl ? (
-          <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
+          <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
             <Image
               src={imageUrl}
               alt={title}
@@ -46,7 +46,7 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
             />
           </div>
         ) : (
-          <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border-b border-[#d9c8ad] bg-gradient-to-br from-[#f7efdf] via-[#f2e7d2] to-[#eadbc3]">
+          <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden border-b border-[#d9c8ad] bg-gradient-to-br from-[#f7efdf] via-[#f2e7d2] to-[#eadbc3]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.28),transparent_50%)]" />
             <div className="z-10 flex flex-col items-center gap-2 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full border border-[#ccb38e] bg-[#fff8ea] text-xl font-semibold text-[#70543a]">
