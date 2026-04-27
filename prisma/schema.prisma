@@ -64,6 +64,7 @@ model Person {
   universityRole    String?
   department        String?
   faculty           String?
+  participationPeriod String?
   studyOrWorkYears  String?
   birthDate         DateTime?
   deathDate         DateTime?

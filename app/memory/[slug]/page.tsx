@@ -41,6 +41,9 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
           <div className="mt-3 grid gap-1 text-sm text-[#6c5a45] sm:grid-cols-2">
             <p>Дата рождения: {formatDate(person.birthDate) ?? "—"}</p>
             <p>Дата смерти: {formatDate(person.deathDate) ?? "—"}</p>
+            <p>Воинское звание: {person.faculty ?? "—"}</p>
+            <p>Род войск / направление службы: {person.department ?? "—"}</p>
+            <p className="sm:col-span-2">Период участия: {person.participationPeriod ?? "—"}</p>
             <p className="sm:col-span-2">Опубликовано: {formatDate(person.publishedAt) ?? "—"}</p>
           </div>
         </header>
