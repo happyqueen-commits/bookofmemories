@@ -12,7 +12,9 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:status": "prisma migrate status",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "admin:create": "tsx scripts/create-admin.ts",
+    "predev": "node scripts/ensure-env.mjs --check-db",
+    "env:check": "node scripts/ensure-env.mjs --check-db"
   },
   "dependencies": {
     "@vercel/blob": "^1.1.1",
