@@ -17,7 +17,7 @@ export default async function Home() {
             Студенты, сотрудники и выпускники Финансового университета могут добавить сюда историю о своих родных и близких, участвующих в СВО.
           </p>
         </div>
-        <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Все материалы проходят предварительную проверку перед публикацией..</p>
+        <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Все материалы проходят предварительную проверку перед публикацией.</p>
       </section>
 
       <section className="section-reveal reveal-delay-2 rounded-xl border border-[#cdb99a] bg-[#fbf8f1] p-6 shadow-panel md:p-8">
