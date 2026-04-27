@@ -19,8 +19,9 @@ type DraftState = {
   biography: string;
   birthDate: string;
   deathDate: string;
-  faculty: string;
-  department: string;
+  militaryRank: string;
+  serviceBranch: string;
+  participationPeriod: string;
   shortDescription: string;
   photoUrls: string;
 };
@@ -37,8 +38,9 @@ const defaultDraft: DraftState = {
   biography: "",
   birthDate: "",
   deathDate: "",
-  faculty: "",
-  department: "",
+  militaryRank: "",
+  serviceBranch: "",
+  participationPeriod: "",
   shortDescription: "",
   photoUrls: ""
 };
@@ -141,8 +143,9 @@ export function TypedSubmitForm() {
     biography: searchParams.get("biography") ?? undefined,
     birthDate: searchParams.get("birthDate") ?? undefined,
     deathDate: searchParams.get("deathDate") ?? undefined,
-    faculty: searchParams.get("faculty") ?? undefined,
-    department: searchParams.get("department") ?? undefined,
+    militaryRank: searchParams.get("militaryRank") ?? searchParams.get("faculty") ?? undefined,
+    serviceBranch: searchParams.get("serviceBranch") ?? searchParams.get("department") ?? undefined,
+    participationPeriod: searchParams.get("participationPeriod") ?? undefined,
     shortDescription: searchParams.get("shortDescription") ?? undefined,
     photoUrls: searchParams.get("photoUrls") ?? undefined
   };
@@ -229,8 +232,11 @@ export function TypedSubmitForm() {
     shortDescription: "Краткое описание",
     birthDate: "Дата рождения",
     deathDate: "Дата смерти",
-    faculty: "Факультет",
-    department: "Кафедра",
+    militaryRank: "Воинское звание",
+    serviceBranch: "Род войск / направление службы",
+    participationPeriod: "Период участия",
+    faculty: "Воинское звание",
+    department: "Род войск / направление службы",
     photoUrls: "Фотографии",
     uploadedPhotoUrl: "Загруженное фото",
     contactName: "Ваше имя",
@@ -533,19 +539,24 @@ export function TypedSubmitForm() {
         <h2 className="text-lg font-semibold text-slate-900">Дополнительные сведения</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
-            <span className="font-medium text-slate-800">Факультет</span>
-            <input name="faculty" className={getInputClass("faculty")} value={draft.faculty} onChange={(event) => setDraft((prev) => ({ ...prev, faculty: event.target.value }))} placeholder="Например: Факультет информатики и систем управления" />
-            {getFieldErrorText("faculty") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("faculty")}</span> : null}
+            <span className="font-medium text-slate-800">Воинское звание</span>
+            <input name="militaryRank" className={getInputClass("militaryRank")} value={draft.militaryRank} onChange={(event) => setDraft((prev) => ({ ...prev, militaryRank: event.target.value }))} placeholder="Например: сержант" />
+            {getFieldErrorText("militaryRank") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("militaryRank")}</span> : null}
           </label>
           <label className="block">
-            <span className="font-medium text-slate-800">Кафедра</span>
-            <input name="department" className={getInputClass("department")} value={draft.department} onChange={(event) => setDraft((prev) => ({ ...prev, department: event.target.value }))} placeholder="Например: Кафедра программного обеспечения" />
-            {getFieldErrorText("department") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("department")}</span> : null}
+            <span className="font-medium text-slate-800">Род войск / направление службы</span>
+            <input name="serviceBranch" className={getInputClass("serviceBranch")} value={draft.serviceBranch} onChange={(event) => setDraft((prev) => ({ ...prev, serviceBranch: event.target.value }))} placeholder="Например: инженерные войска" />
+            {getFieldErrorText("serviceBranch") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("serviceBranch")}</span> : null}
+          </label>
+          <label className="block md:col-span-2">
+            <span className="font-medium text-slate-800">Период участия</span>
+            <input name="participationPeriod" className={getInputClass("participationPeriod")} value={draft.participationPeriod} onChange={(event) => setDraft((prev) => ({ ...prev, participationPeriod: event.target.value }))} placeholder="Например: 2022–2024" />
+            {getFieldErrorText("participationPeriod") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("participationPeriod")}</span> : null}
           </label>
         </div>
         <label className="block">
           <span className="font-medium text-slate-800">Краткое описание</span>
-          <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: Профессор кафедры, автор учебников по вычислительной математике" />
+          <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: проходил службу в инженерных войсках, был награждён за мужество и верность долгу" />
           {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
         </label>
       </section>

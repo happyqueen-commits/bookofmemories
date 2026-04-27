@@ -28,6 +28,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
               { biography: { contains: q, mode: "insensitive" } },
               { faculty: { contains: q, mode: "insensitive" } },
               { department: { contains: q, mode: "insensitive" } },
+              { participationPeriod: { contains: q, mode: "insensitive" } },
               { firstName: { contains: q, mode: "insensitive" } },
               { lastName: { contains: q, mode: "insensitive" } },
               { middleName: { contains: q, mode: "insensitive" } }
@@ -43,7 +44,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
       <section className="rounded-xl border border-borderWarm bg-gradient-to-b from-[#f8f1e5] to-[#f3e8d8] p-5 shadow-panel sm:p-6">
         <h1 className="text-3xl font-semibold text-[#3d2d1f]">Участники и истории</h1>
         <p className="mt-2 max-w-3xl text-[#5b4631]">
-          Используйте поиск по имени, описанию, биографии, факультету или кафедре.
+          Используйте поиск по имени, описанию, биографии, роду войск или периоду участия.
         </p>
         <div className="mt-4 rounded-xl border border-[#ccb18b] bg-[#fefcf4] p-3 sm:p-4">
           <SearchForm defaultValue={q ?? ""} placeholder="Поиск персон" />

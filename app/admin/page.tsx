@@ -12,8 +12,11 @@ const payloadFieldLabels: Record<string, string> = {
   shortDescription: "Краткое описание",
   birthDate: "Дата рождения",
   deathDate: "Дата смерти",
-  faculty: "Факультет",
-  department: "Кафедра",
+  militaryRank: "Воинское звание",
+  serviceBranch: "Род войск / направление службы",
+  participationPeriod: "Период участия",
+  faculty: "Воинское звание",
+  department: "Род войск / направление службы",
   photoUrls: "Фото"
 };
 
