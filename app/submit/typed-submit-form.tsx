@@ -48,7 +48,7 @@ function SubmitButton() {
 
   return (
     <button
-      className="rounded bg-slate-800 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-70"
+      className="inline-flex w-full items-center justify-center rounded-md bg-slate-800 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
       type="submit"
       disabled={pending}
       aria-busy={pending}
@@ -248,7 +248,7 @@ export function TypedSubmitForm() {
     return errorMessage ?? "Проверьте это поле.";
   };
 
-  const description = `Данные о персоне для раздела "Книга участников". В этом MVP форма работает только для Person.`;
+  const requiredMark = <span className="ml-1 text-red-600">*</span>;
 
   const uploadPhoto = async (file: File) => {
     setIsUploadingPhoto(true);
@@ -444,7 +444,11 @@ export function TypedSubmitForm() {
   const cropBaseScale = imageSize && frameSize ? Math.max(frameSize.width / imageSize.width, frameSize.height / imageSize.height) : 1;
 
   return (
-    <form action={submitMaterialAction} onSubmit={handleSubmit} className="space-y-4 rounded border border-slate-300 bg-white p-4">
+    <form
+      action={submitMaterialAction}
+      onSubmit={handleSubmit}
+      className="space-y-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-7"
+    >
       {isInvalidForm && (
         <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
           {errorField && fieldLabels[errorField] ? `Проверьте поле «${fieldLabels[errorField]}».` : "Проверьте форму."}
@@ -463,76 +467,109 @@ export function TypedSubmitForm() {
       <input type="hidden" name="uploadedPhotoUrl" value={uploadedPhotoUrl} />
       <input type="hidden" name="photoUrls" value={draft.photoUrls} />
       <input type="text" name="website" autoComplete="off" tabIndex={-1} aria-hidden="true" className="hidden" />
-      <p className="rounded bg-slate-100 px-3 py-2 text-sm text-slate-700">{description}</p>
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <p className="text-sm leading-relaxed text-slate-700">
+          Заполните форму, чтобы предложить материал для публикации в разделе «Книга участников». После отправки заявка
+          поступит на модерацию, а статус можно будет проверить через письмо с кодом подтверждения.
+        </p>
+        <p className="text-xs text-slate-500">
+          Поля, отмеченные <span className="text-red-600">*</span>, обязательны для заполнения.
+        </p>
+      </div>
 
-      <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-3">
-        <p className="text-sm font-medium text-slate-800">Контакты для связи по заявке</p>
+      <section className="space-y-4 border-b border-slate-200 pb-6">
+        <h2 className="text-lg font-semibold text-slate-900">Контакты для связи</h2>
         <label className="block">
-          Ваше имя <span className="text-slate-500">(обязательно)</span>
+          <span className="font-medium text-slate-800">
+            Ваше имя
+            {requiredMark}
+          </span>
           <input name="contactName" className={getInputClass("contactName")} value={draft.contactName} onChange={(event) => setDraft((prev) => ({ ...prev, contactName: event.target.value }))} placeholder="Например: Анна Петрова" required />
           {getFieldErrorText("contactName") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("contactName")}</span> : null}
         </label>
         <label className="block">
-          Email для связи <span className="text-slate-500">(обязательно)</span>
+          <span className="font-medium text-slate-800">
+            Email для связи
+            {requiredMark}
+          </span>
           <input name="contactEmail" type="email" className={getInputClass("contactEmail")} value={draft.contactEmail} onChange={(event) => setDraft((prev) => ({ ...prev, contactEmail: event.target.value }))} placeholder="Например: author@example.com" required />
           {getFieldErrorText("contactEmail") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("contactEmail")}</span> : null}
         </label>
-      </div>
+      </section>
 
-      <div className="space-y-3">
+      <section className="space-y-4 border-b border-slate-200 pb-6">
+        <h2 className="text-lg font-semibold text-slate-900">Сведения о человеке</h2>
         <label className="block">
-          ФИО <span className="text-slate-500">(обязательно)</span>
+          <span className="font-medium text-slate-800">
+            ФИО
+            {requiredMark}
+          </span>
           <input name="fullName" className={getInputClass("fullName")} value={draft.fullName} onChange={(event) => setDraft((prev) => ({ ...prev, fullName: event.target.value }))} placeholder="Например: Иванов Иван Иванович" required />
           {getFieldErrorText("fullName") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("fullName")}</span> : null}
         </label>
         <label className="block">
-          Биография <span className="text-slate-500">(обязательно)</span>
+          <span className="font-medium text-slate-800">
+            Биография
+            {requiredMark}
+          </span>
           <textarea name="biography" className={getInputClass("biography")} rows={6} value={draft.biography} onChange={(event) => setDraft((prev) => ({ ...prev, biography: event.target.value }))} placeholder="Например: Окончил МГТУ в 1985 году, работал на кафедре вычислительной техники, участвовал в научных проектах..." required />
           {getFieldErrorText("biography") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("biography")}</span> : null}
         </label>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
-            Дата рождения <span className="text-slate-500">(необязательно)</span>
+            <span className="font-medium text-slate-800">Дата рождения</span>
             <input name="birthDate" type="date" className={getInputClass("birthDate")} value={draft.birthDate} onChange={(event) => setDraft((prev) => ({ ...prev, birthDate: event.target.value }))} />
             {getFieldErrorText("birthDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("birthDate")}</span> : null}
           </label>
           <label className="block">
-            Дата смерти <span className="text-slate-500">(необязательно)</span>
+            <span className="font-medium text-slate-800">Дата смерти</span>
             <input name="deathDate" type="date" className={getInputClass("deathDate")} value={draft.deathDate} onChange={(event) => setDraft((prev) => ({ ...prev, deathDate: event.target.value }))} />
             {getFieldErrorText("deathDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("deathDate")}</span> : null}
           </label>
         </div>
+      </section>
+
+      <section className="space-y-4 border-b border-slate-200 pb-6">
+        <h2 className="text-lg font-semibold text-slate-900">Дополнительные сведения</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
-            Факультет <span className="text-slate-500">(необязательно)</span>
+            <span className="font-medium text-slate-800">Факультет</span>
             <input name="faculty" className={getInputClass("faculty")} value={draft.faculty} onChange={(event) => setDraft((prev) => ({ ...prev, faculty: event.target.value }))} placeholder="Например: Факультет информатики и систем управления" />
             {getFieldErrorText("faculty") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("faculty")}</span> : null}
           </label>
           <label className="block">
-            Кафедра <span className="text-slate-500">(необязательно)</span>
+            <span className="font-medium text-slate-800">Кафедра</span>
             <input name="department" className={getInputClass("department")} value={draft.department} onChange={(event) => setDraft((prev) => ({ ...prev, department: event.target.value }))} placeholder="Например: Кафедра программного обеспечения" />
             {getFieldErrorText("department") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("department")}</span> : null}
           </label>
         </div>
         <label className="block">
-          Краткое описание <span className="text-slate-500">(необязательно)</span>
+          <span className="font-medium text-slate-800">Краткое описание</span>
           <input name="shortDescription" className={getInputClass("shortDescription")} value={draft.shortDescription} onChange={(event) => setDraft((prev) => ({ ...prev, shortDescription: event.target.value }))} placeholder="Например: Профессор кафедры, автор учебников по вычислительной математике" />
           {getFieldErrorText("shortDescription") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("shortDescription")}</span> : null}
         </label>
+      </section>
 
-        <label className="mt-6 block">
-          Фотофайл <span className="text-slate-500">(необязательно, до 5 МБ)</span>
+      <section className="space-y-4 border-b border-slate-200 pb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Фотография</h2>
+          <p className="mt-1 text-sm text-slate-600">Загрузите фото человека для карточки. Поддерживаются изображения до 5 МБ.</p>
+        </div>
+
+        <label className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <span className="font-medium text-slate-800">Выберите изображение</span>
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            className={baseInputClass}
+            className={`${baseInputClass} bg-white`}
             onChange={(event) => {
               void handleNewFile(event.target.files?.[0] ?? null);
             }}
           />
-          <span className="mt-1 block text-xs text-slate-600">
-            Шаг 1: выберите фото. Шаг 2: подгоните изображение в рамке 4:5. Шаг 3: подтвердите кадрирование и проверьте превью.
+          <span className="mt-2 block text-xs leading-relaxed text-slate-600">
+            Как подготовить фото: 1) загрузите файл, 2) разместите изображение в рамке 4:5, 3) подтвердите кадрирование и
+            проверьте итоговое превью.
           </span>
           {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
         </label>
@@ -607,10 +644,17 @@ export function TypedSubmitForm() {
             </div>
           </div>
         ) : null}
-      </div>
+      </section>
 
-      {isUploadingPhoto ? <p className="text-sm text-slate-600">Загружаем изображение…</p> : null}
-      <SubmitButton />
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h2 className="text-lg font-semibold text-slate-900">Отправка заявки</h2>
+        <p className="text-sm text-slate-600">
+          После отправки заявка будет передана на модерацию. Мы отправим код подтверждения на указанный email, чтобы вы могли
+          отслеживать статус.
+        </p>
+        {isUploadingPhoto ? <p className="text-sm text-slate-600">Загружаем изображение…</p> : null}
+        <SubmitButton />
+      </section>
     </form>
   );
 }
