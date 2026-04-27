@@ -70,7 +70,30 @@ cp .env.example .env
 npm run prisma:generate
 npm run prisma:migrate:deploy
 npm run prisma:seed
+npm run env:check
 npm run dev
+```
+
+---
+
+## Troubleshooting: `Authentication failed against database server`
+
+If you see Prisma runtime errors like:
+
+- `Authentication failed against database server`
+- `` provided database credentials for `(not available)` are not valid``
+
+check the following:
+
+1. `DATABASE_URL` is set in `.env` (not only in `.env.example`).
+2. Username/password/host/port/database in `DATABASE_URL` are correct.
+3. PostgreSQL is reachable from your app host (`localhost` inside Docker is not your host machine).
+4. Run `npm run env:check` to validate env values and test a real DB connection before starting Next.js.
+
+Example local URL:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bookofmemories?schema=public"
 ```
 
 ---
