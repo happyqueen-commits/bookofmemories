@@ -14,10 +14,10 @@ export default async function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a5b3a]">Электронный архив участников</p>
           <h1 className="mt-5 display-title text-[#3f2e1f]">Книга участников: Жизнь Финансового университета во времена СВО</h1>
           <p className="mt-5 max-w-3xl text-[1.03rem] leading-relaxed text-[#5d4732]">
-            Студенты, сотрудники и выпускники Финансового университета могут добавить сюда историю о своих родных и близких, участвующих в СВО. Все материалы проходят предварительную проверку перед публикацией.
+            Студенты, сотрудники и выпускники Финансового университета могут добавить сюда историю о своих родных и близких, участвующих в СВО.
           </p>
         </div>
-        <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Проверенные материалы и публичные карточки участников в едином архиве.</p>
+        <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Все материалы проходят предварительную проверку перед публикацией..</p>
       </section>
 
       <section className="section-reveal reveal-delay-2 rounded-xl border border-[#cdb99a] bg-[#fbf8f1] p-6 shadow-panel md:p-8">
