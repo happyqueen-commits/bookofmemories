@@ -13,21 +13,11 @@ export default async function Home() {
         <div className="max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a5b3a]">Электронный архив участников</p>
           <h1 className="mt-5 display-title text-[#3f2e1f]">Книга участников: Жизнь Финансового университета во времена СВО</h1>
-          <p className="mt-5 max-w-3xl text-[1.03rem] leading-relaxed text-[#5d4732]">Портал хранит подтвержденные сведения о людях и событиях, связанных с историей университета.</p>
+          <p className="mt-5 max-w-3xl text-[1.03rem] leading-relaxed text-[#5d4732]">
+            Студенты, сотрудники и выпускники Финансового университета могут добавить сюда историю о своих родных и близких, участвующих в СВО. Все материалы проходят предварительную проверку перед публикацией.
+          </p>
         </div>
         <p className="mt-4 text-xs tracking-[0.02em] text-[#775a3c]">Проверенные материалы и публичные карточки участников в едином архиве.</p>
-      </section>
-
-      <section className="section-reveal rounded-xl border border-[#d8c7a9] bg-[#efe4cf] p-6 md:p-7">
-        <div className="flex items-center justify-between gap-3 border-b border-[#d4c1a0] pb-4">
-          <h2 className="text-xl font-semibold text-[#483520] md:text-2xl">О возможностях портала</h2>
-          <Link href="/about" className="inline-flex items-center rounded-full border border-[#c8ad87] bg-[#f8efdf] px-3 py-1.5 text-sm font-semibold text-[#6f3b2f] transition-colors hover:bg-[#f2e3cb]">Подробнее</Link>
-        </div>
-        <ul className="mt-5 grid gap-3 text-[#5a4731] md:grid-cols-3">
-          <li className="rounded-lg border border-[#d9c6a8] bg-[#f8efde] px-4 py-4 shadow-[0_5px_14px_rgb(83_57_26_/_0.06)]">Поиск информации о человеке и его жизненном пути.</li>
-          <li className="rounded-lg border border-[#d9c6a8] bg-[#f8efde] px-4 py-4 shadow-[0_5px_14px_rgb(83_57_26_/_0.06)]">Публикация и хранение подтвержденных историй.</li>
-          <li className="rounded-lg border border-[#d9c6a8] bg-[#f8efde] px-4 py-4 shadow-[0_5px_14px_rgb(83_57_26_/_0.06)]">Строгая модерация перед выводом в открытый доступ.</li>
-        </ul>
       </section>
 
       <section className="section-reveal reveal-delay-2 rounded-xl border border-[#cdb99a] bg-[#fbf8f1] p-6 shadow-panel md:p-8">
