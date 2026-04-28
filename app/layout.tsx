@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen" style={{ ["--font-sans" as string]: "Inter" }}>
         <div className="flex min-h-screen flex-col">
           <Nav />
-          <main className="container-arch flex-1 py-6 md:py-8">{children}</main>
+          <main className="container-arch flex-1 py-6 pb-12 md:py-8 md:pb-16">{children}</main>
           <Footer />
         </div>
       </body>
