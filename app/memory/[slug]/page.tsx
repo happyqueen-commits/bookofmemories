@@ -5,6 +5,7 @@ import { ModerationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PhotoCarousel } from "@/components/photo-carousel";
 import { MetadataItem, PersonMetaList } from "@/components/person-meta-list";
+import { getPersonImageAlt, resolvePersonImageUrl } from "@/lib/placeholders";
 
 function formatDate(value: Date | null) {
   if (!value) return null;
@@ -33,7 +34,11 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
 
   if (!person) notFound();
 
-  const photos = person.photoUrls.length > 0 ? person.photoUrls : person.photoUrl ? [person.photoUrl] : [];
+  const photos = person.photoUrls.map((photo) => photo.trim()).filter(Boolean);
+  const primaryPhoto = person.photoUrl?.trim();
+  const normalizedPhotos =
+    photos.length > 0 ? photos : primaryPhoto ? [primaryPhoto] : [resolvePersonImageUrl(person.photoUrl)];
+  const altText = getPersonImageAlt(person.fullName, normalizedPhotos[0]);
 
   return (
     <article className="mx-auto max-w-5xl break-words">
@@ -51,7 +56,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
         </header>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(270px,340px)_minmax(0,1fr)] lg:items-start">
-          {photos.length > 0 ? <PhotoCarousel photos={photos} alt={person.fullName} /> : null}
+          <PhotoCarousel photos={normalizedPhotos} alt={altText} />
           <section className="rounded-xl border border-[#dccdb2] bg-[#fffdf8] p-4 md:p-5">
             <h2 className="text-base font-semibold tracking-wide text-[#4d3a24]">Описание</h2>
             <p className="mt-3 whitespace-pre-line leading-relaxed text-[#3f2f21] [overflow-wrap:anywhere]">{person.biography}</p>

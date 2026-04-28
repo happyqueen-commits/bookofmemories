@@ -1,0 +1,29 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Изображение-заглушка для карточки участника">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4c4a3b"/>
+      <stop offset="55%" stop-color="#8f8568"/>
+      <stop offset="100%" stop-color="#c5b89b"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="40%" r="70%">
+      <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.45"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1500" fill="url(#bg)"/>
+  <g opacity="0.18" stroke="#e7dcc2" stroke-width="2">
+    <path d="M40 320h1120"/>
+    <path d="M180 350h840"/>
+    <path d="M120 1280h960"/>
+    <path d="M160 220l900 1060"/>
+    <path d="M1040 220L140 1280"/>
+  </g>
+  <g fill="#1f2520" opacity="0.94">
+    <path d="M210 1500h780l-120-445-110-90H440l-110 90-120 445Z"/>
+    <rect x="470" y="620" width="260" height="390" rx="120"/>
+    <ellipse cx="600" cy="500" rx="210" ry="250"/>
+    <rect x="340" y="270" width="520" height="200" rx="80" fill="#2d352d"/>
+    <rect x="320" y="430" width="560" height="115" rx="45" fill="#313a31"/>
+  </g>
+  <rect width="1200" height="1500" fill="url(#vignette)"/>
+</svg>
