@@ -41,7 +41,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
   const altText = getPersonImageAlt(person.fullName, normalizedPhotos[0]);
 
   return (
-    <article className="mx-auto w-full max-w-[1040px] break-words">
+    <article className="container-md break-words">
       <section className="rounded-2xl border border-[#cfbea0] bg-[#f9f4e9] p-5 shadow-panel md:p-7">
         <header className="border-b border-[#d7c7ab] pb-4 md:pb-5">
           <h1 className="text-3xl font-semibold tracking-tight text-[#362718] md:text-4xl">{person.fullName}</h1>

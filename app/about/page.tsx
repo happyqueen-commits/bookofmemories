@@ -1,7 +1,7 @@
 export default function AboutPage() {
   return (
-    <div className="rounded-2xl bg-paper py-6 md:py-8">
-      <article className="mx-auto max-w-4xl rounded-2xl border border-[#d8ccb2] bg-[#f9f5eb] px-6 py-8 shadow-panel md:px-10 md:py-10">
+    <div className="container-sm page-shell-tight">
+      <article className="rounded-2xl border border-[#d8ccb2] bg-[#f9f5eb] px-6 py-7 shadow-panel md:px-9 md:py-9">
         <h1 className="section-title text-[#3f2e1f]">О проекте</h1>
 
         <div className="mt-5 space-y-4 text-[15px] leading-7 text-[#5d4732] md:text-base">

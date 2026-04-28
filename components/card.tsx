@@ -31,16 +31,16 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
       className="interactive-lift motion-slide-in group block h-full overflow-hidden rounded-2xl border border-[#d6c4a8] bg-[#fffdf9] shadow-[0_8px_20px_rgb(58_39_20_/_0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c2f24] focus-visible:ring-offset-2"
     >
       <article className="flex h-full flex-col">
-        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
+        <div className="relative aspect-[5/6] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
           <PersonImage
             src={imageUrl}
             alt={altText}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 46vw, 31vw"
             className="object-cover object-center transition-transform duration-300 ease-out group-hover:scale-[1.02]"
           />
         </div>
-        <div className="flex h-full flex-col gap-3 p-5">
+        <div className="flex h-full flex-col gap-2.5 p-4 md:p-[var(--space-card)]">
           <div>
             <h3 className="card-title break-words text-[#322112]">{title}</h3>
             {subtitle ? <p className="mt-1 text-sm font-medium text-[#76614b]">{subtitle}</p> : null}

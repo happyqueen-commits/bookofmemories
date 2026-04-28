@@ -84,7 +84,7 @@ export default async function AdminPage({
   ]);
 
   return (
-    <div className="space-y-7">
+    <div className="container-lg space-y-6 md:space-y-7">
       {(params.personUpdated === "1" || params.personArchived === "1" || params.personArchived === "0") && (
         <p className="rounded border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           {params.personUpdated === "1" ? "Карточка успешно обновлена." : null}

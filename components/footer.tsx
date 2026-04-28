@@ -3,9 +3,9 @@ import { PUBLIC_NAV_LINKS, SERVICE_LINKS, SITE_CONFIG } from "@/lib/site-config"
 
 export function Footer() {
   return (
-    <footer className="mt-10 border-t border-[#ccb998] bg-[#efe4cf]">
-      <div className="container-arch py-8 md:py-10">
-        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+    <footer className="mt-6 border-t border-[#ccb998] bg-[#efe4cf]">
+      <div className="container-arch py-6 md:py-8">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-[#4e3a22]">{SITE_CONFIG.projectName}</h2>
             <p className="text-sm leading-relaxed text-[#5e4a33]">
@@ -53,7 +53,7 @@ export function Footer() {
           </section>
         </div>
 
-        <div className="mt-8 border-t border-[#cfba97] pt-4 text-xs leading-relaxed text-[#6e5a42]">
+        <div className="mt-6 border-t border-[#cfba97] pt-4 text-xs leading-relaxed text-[#6e5a42]">
           <p>Все материалы проходят предварительную модерацию перед публикацией в открытом доступе.</p>
           <p className="mt-2">© 2026 Книга участников. Патриотический проект КИПФИН Финансового университета.</p>
         </div>
