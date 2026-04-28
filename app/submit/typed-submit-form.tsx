@@ -475,8 +475,8 @@ export function TypedSubmitForm() {
       <input type="text" name="website" autoComplete="off" tabIndex={-1} aria-hidden="true" className="hidden" />
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
         <p className="text-sm leading-relaxed text-slate-700">
-          Заполните форму, чтобы предложить материал для публикации в разделе «Книга участников». После отправки заявка
-          поступит на модерацию, а статус можно будет проверить через письмо с кодом подтверждения.
+          Заполните сведения о человеке, участвующем в СВО. После отправки заявка поступит на модерацию, а после проверки
+          материал может быть опубликован в разделе «Книга участников».
         </p>
         <p className="text-xs text-slate-500">
           Поля, отмеченные <span className="text-red-600">*</span>, обязательны для заполнения.
@@ -518,18 +518,20 @@ export function TypedSubmitForm() {
             Биография
             {requiredMark}
           </span>
-          <textarea name="biography" className={getInputClass("biography")} rows={6} value={draft.biography} onChange={(event) => setDraft((prev) => ({ ...prev, biography: event.target.value }))} placeholder="Например: Окончил МГТУ в 1985 году, работал на кафедре вычислительной техники, участвовал в научных проектах..." required />
+          <textarea name="biography" className={getInputClass("biography")} rows={6} value={draft.biography} onChange={(event) => setDraft((prev) => ({ ...prev, biography: event.target.value }))} placeholder="Расскажите о человеке: где родился, чем занимался, каким его помнят близкие, что важно указать в карточке." required />
           {getFieldErrorText("biography") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("biography")}</span> : null}
         </label>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block">
             <span className="font-medium text-slate-800">Дата рождения</span>
             <input name="birthDate" type="date" className={getInputClass("birthDate")} value={draft.birthDate} onChange={(event) => setDraft((prev) => ({ ...prev, birthDate: event.target.value }))} />
+            <span className="mt-1 block text-xs text-slate-500">Формат даты: дд.мм.гггг</span>
             {getFieldErrorText("birthDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("birthDate")}</span> : null}
           </label>
           <label className="block">
-            <span className="font-medium text-slate-800">Дата смерти</span>
+            <span className="font-medium text-slate-800">Дата смерти (необязательно)</span>
             <input name="deathDate" type="date" className={getInputClass("deathDate")} value={draft.deathDate} onChange={(event) => setDraft((prev) => ({ ...prev, deathDate: event.target.value }))} />
+            <span className="mt-1 block text-xs text-slate-500">Формат даты: дд.мм.гггг</span>
             {getFieldErrorText("deathDate") ? <span className="mt-1 block text-sm text-red-700">{getFieldErrorText("deathDate")}</span> : null}
           </label>
         </div>
@@ -564,7 +566,10 @@ export function TypedSubmitForm() {
       <section className="space-y-4 border-b border-slate-200 pb-6">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Фотография</h2>
-          <p className="mt-1 text-sm text-slate-600">Загрузите фото человека для карточки. Поддерживаются изображения до 5 МБ.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Вы можете добавить фотографию для карточки. После выбора файла откроется окно кадрирования — подгоните изображение под формат карточки и подтвердите результат.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Допустимые форматы: JPG, PNG или WEBP. Максимальный размер файла — 5 МБ.</p>
         </div>
 
         <label className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -578,10 +583,7 @@ export function TypedSubmitForm() {
               void handleNewFile(event.target.files?.[0] ?? null);
             }}
           />
-          <span className="mt-2 block text-xs leading-relaxed text-slate-600">
-            Как подготовить фото: 1) загрузите файл, 2) разместите изображение в рамке 4:5, 3) подтвердите кадрирование и
-            проверьте итоговое превью.
-          </span>
+          <span className="mt-2 block text-xs leading-relaxed text-slate-600">После выбора файла откроется окно кадрирования с предпросмотром результата.</span>
           {uploadError ? <span className="mt-1 block text-sm text-red-700">{uploadError}</span> : null}
         </label>
 

@@ -20,6 +20,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
   const items = await prisma.person.findMany({
     where: {
       moderationStatus: ModerationStatus.approved,
+      deletedAt: null,
       ...(q
         ? {
             OR: [

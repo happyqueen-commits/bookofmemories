@@ -23,8 +23,12 @@ export function buildArchiveMaterialsWhere(query?: string, type?: string): Prism
 
 export async function getHomepageData() {
   const [featuredPersons, stats] = await Promise.all([
-    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved }, take: 3, orderBy: { publishedAt: "desc" } }),
-    prisma.person.count({ where: { moderationStatus: ModerationStatus.approved } })
+    prisma.person.findMany({
+      where: { moderationStatus: ModerationStatus.approved, deletedAt: null },
+      take: 3,
+      orderBy: { publishedAt: "desc" }
+    }),
+    prisma.person.count({ where: { moderationStatus: ModerationStatus.approved, deletedAt: null } })
   ]);
 
   return { featuredPersons, stats };
@@ -35,7 +39,14 @@ export async function getPublicLists(query?: string) {
   const searchFilter = buildSearchFilter(search);
 
   const [persons, archive, stories, chronicle] = await Promise.all([
-    prisma.person.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ fullName: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
+    prisma.person.findMany({
+      where: {
+        moderationStatus: ModerationStatus.approved,
+        deletedAt: null,
+        OR: searchFilter ? [{ fullName: searchFilter }] : undefined
+      },
+      orderBy: { publishedAt: "desc" }
+    }),
     prisma.archiveMaterial.findMany({ where: buildArchiveMaterialsWhere(search), orderBy: { publishedAt: "desc" } }),
     prisma.story.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { excerpt: searchFilter }] : undefined }, orderBy: { publishedAt: "desc" } }),
     prisma.chronicleEvent.findMany({ where: { moderationStatus: ModerationStatus.approved, OR: searchFilter ? [{ title: searchFilter }, { summary: searchFilter }] : undefined }, orderBy: { eventDate: "desc" } })

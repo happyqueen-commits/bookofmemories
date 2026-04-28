@@ -17,6 +17,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
   const person = await prisma.person.findFirst({
     where: {
       moderationStatus: ModerationStatus.approved,
+      deletedAt: null,
       slug: {
         equals: normalizedSlug,
         mode: "insensitive"
