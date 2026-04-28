@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import { PersonImage } from "@/components/person-image";
 
 type PhotoCarouselProps = {
   photos: string[];
@@ -19,7 +19,7 @@ export function PhotoCarousel({ photos, alt }: PhotoCarouselProps) {
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border border-[#ccb18b] bg-[#f3ead9] p-2 shadow-sm">
         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg bg-[#efe4d1]">
-          <Image src={photos[index]} alt={alt} fill className="object-cover object-center" sizes="(max-width: 1024px) 100vw, 40vw" />
+          <PersonImage src={photos[index]} alt={alt} fill className="object-cover object-center" sizes="(max-width: 860px) 100vw, (max-width: 1280px) 45vw, 420px" />
         </div>
       </div>
       {hasMany ? (

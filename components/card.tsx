@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
-import { getPersonImageAlt, resolvePersonImageUrl } from "@/lib/placeholders";
+import { PersonImage } from "@/components/person-image";
+import { getPersonImageAlt } from "@/lib/placeholders";
 
 type CardProps = {
   title: string;
@@ -23,7 +23,6 @@ function formatCardDate(value: Date | null) {
 
 export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
   const safeText = text.trim();
-  const imageSrc = resolvePersonImageUrl(imageUrl);
   const altText = getPersonImageAlt(title, imageUrl);
 
   return (
@@ -33,8 +32,8 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
     >
       <article className="flex h-full flex-col">
         <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-[#d9c8ad] bg-[#f2eadc]">
-          <Image
-            src={imageSrc}
+          <PersonImage
+            src={imageUrl}
             alt={altText}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
@@ -46,7 +45,13 @@ export function Card({ title, text, href, imageUrl, subtitle }: CardProps) {
             <h3 className="card-title break-words text-[#322112]">{title}</h3>
             {subtitle ? <p className="mt-1 text-sm font-medium text-[#76614b]">{subtitle}</p> : null}
           </div>
-          <p className="body-muted flex-1 [overflow-wrap:anywhere]">{safeText}</p>
+          {safeText ? (
+            <p className="body-muted flex-1 overflow-hidden [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]">
+              {safeText}
+            </p>
+          ) : (
+            <div className="flex-1" />
+          )}
           <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#6d372b] transition-colors group-hover:text-[#5c281e]">
             Открыть карточку
             <span aria-hidden="true" className="text-base leading-none transition-transform duration-200 group-hover:translate-x-0.5">
