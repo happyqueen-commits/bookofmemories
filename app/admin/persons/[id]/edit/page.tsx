@@ -33,7 +33,7 @@ export default async function EditPersonPage({
   if (!person) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="container-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">Редактирование карточки</h1>
         <Link href="/admin" className="text-sm text-slate-600 underline">Вернуться в админку</Link>

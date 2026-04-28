@@ -138,13 +138,13 @@ export default async function SubmissionStatusPage({
   const hasAccess = Boolean(verifiedEmail);
 
   return (
-    <div>
+    <div className="container-md page-shell-tight">
       <h1 className="text-2xl font-semibold">Статус поданных материалов</h1>
       <p className="mt-2 text-slate-700">Введите email, получите одноразовый код и подтвердите доступ к заявке.</p>
 
       {!hasAccess ? (
-        <div className="mt-4 space-y-4">
-          <form action={requestSubmissionStatusCodeAction} className="rounded border border-slate-300 bg-white p-4">
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <form action={requestSubmissionStatusCodeAction} className="rounded-xl border border-slate-300 bg-white p-4">
             <label className="block">
               Email
               <input
@@ -165,7 +165,7 @@ export default async function SubmissionStatusPage({
             {renderCodeRequestMessage(params.codeRequestError, params.retryAfter)}
           </form>
 
-          <form action={verifySubmissionStatusCodeAction} className="rounded border border-slate-300 bg-white p-4">
+          <form action={verifySubmissionStatusCodeAction} className="rounded-xl border border-slate-300 bg-white p-4">
             <p className="text-sm text-slate-700">Введите код из письма, чтобы подтвердить email и открыть статус заявки.</p>
             <label className="mt-3 block">
               Email
@@ -203,7 +203,7 @@ export default async function SubmissionStatusPage({
           ) : null}
           <p className="text-sm text-slate-600">Подтвержденный email: {verifiedEmail}</p>
           {submissions.map((submission) => (
-            <article key={submission.id} className="rounded border border-slate-300 bg-white p-3">
+            <article key={submission.id} className="rounded-xl border border-slate-300 bg-white p-4">
               <p className="text-sm text-slate-500">{getEntityTypeLabel(submission.targetEntityType)}</p>
               <p className="text-xs text-slate-500">ID заявки: {submission.id}</p>
               <p className="mt-1 text-sm">

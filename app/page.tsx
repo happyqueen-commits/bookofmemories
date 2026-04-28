@@ -8,7 +8,7 @@ export default async function Home() {
   const { featuredPersons, stats } = await getHomepageData();
 
   return (
-    <div className="space-y-rhythm">
+    <div className="container-lg space-y-6 md:space-y-8">
       <section className="rounded-xl border-2 border-[#ccb089] bg-gradient-to-br from-[#f9f3e6] via-[#f6efdf] to-[#efe1c8] p-6 shadow-[0_14px_38px_rgb(76_50_24_/_0.14)] md:p-10">
         <div className="max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a5b3a]">Электронный архив участников</p>
@@ -25,7 +25,7 @@ export default async function Home() {
           <h2 className="section-title text-[#483520]">Избранные карточки</h2>
           <Link href="/memory" className="text-sm font-semibold text-[#6f3b2f]">Все участники</Link>
         </div>
-        <div className="grid items-stretch gap-5 md:grid-cols-3">
+        <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 md:gap-5">
           {featuredPersons.map((p) => (
             <Card
               key={p.id}

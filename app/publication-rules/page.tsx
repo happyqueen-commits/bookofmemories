@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function PublicationRulesPage() {
   return (
-    <article className="mx-auto max-w-4xl rounded-xl border border-[#ccb998] bg-[#fbf8f1] p-6 shadow-panel md:p-8">
+    <article className="container-sm rounded-xl border border-[#ccb998] bg-[#fbf8f1] p-6 shadow-panel md:p-7">
       <h1 className="display-title text-[#483520]">Правила публикации материалов</h1>
       <p className="mt-4 text-sm leading-relaxed text-[#5e4a33]">
         Материалы публикуются после предварительной проверки редакцией. Это помогает сохранить точность сведений и уважительный

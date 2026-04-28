@@ -12,8 +12,8 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const statusLink = email ? `/submission-status?email=${encodeURIComponent(email)}` : "/submission-status";
 
   return (
-    <div className="mx-auto mb-8 max-w-3xl">
-      <h1 className="mb-6 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">Добавить материал</h1>
+    <div className="container-md page-shell-tight">
+      <h1 className="mb-5 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">Добавить материал</h1>
       <TypedSubmitForm />
       {codeSent ? (
         <p className="mt-3 text-sm text-slate-600">
