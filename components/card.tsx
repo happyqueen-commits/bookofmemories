@@ -78,7 +78,6 @@ export function formatLifespan(birthDate: Date | null, deathDate: Date | null) {
   const birth = formatCardDate(birthDate);
   const death = formatCardDate(deathDate);
 
-  if (!birth && !death) return undefined;
-
-  return `${birth ?? "?"} — ${death ?? "?"}`;
+  if (birth && death) return `${birth} — ${death}`;
+  return birth ?? death;
 }
