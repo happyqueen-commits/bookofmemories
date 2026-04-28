@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ModerationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PhotoCarousel } from "@/components/photo-carousel";
+import { MetadataItem, PersonMetaList } from "@/components/person-meta-list";
 
 function formatDate(value: Date | null) {
   if (!value) return null;
@@ -39,14 +40,14 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
       <section className="rounded-2xl border border-[#cfbea0] bg-[#f9f4e9] p-5 shadow-panel md:p-7">
         <header className="border-b border-[#d7c7ab] pb-4 md:pb-5">
           <h1 className="text-3xl font-semibold tracking-tight text-[#362718] md:text-4xl">{person.fullName}</h1>
-          <div className="mt-3 grid gap-1 text-sm text-[#6c5a45] sm:grid-cols-2">
-            <p>Дата рождения: {formatDate(person.birthDate) ?? "—"}</p>
-            <p>Дата смерти: {formatDate(person.deathDate) ?? "—"}</p>
-            <p>Воинское звание: {person.faculty ?? "—"}</p>
-            <p>Род войск / направление службы: {person.department ?? "—"}</p>
-            <p className="sm:col-span-2">Период участия: {person.participationPeriod ?? "—"}</p>
-            <p className="sm:col-span-2">Опубликовано: {formatDate(person.publishedAt) ?? "—"}</p>
-          </div>
+          <PersonMetaList className="mt-3 grid gap-1 text-sm text-[#6c5a45] sm:grid-cols-2">
+            <MetadataItem label="Дата рождения" value={formatDate(person.birthDate)} />
+            <MetadataItem label="Дата смерти" value={formatDate(person.deathDate)} />
+            <MetadataItem label="Воинское звание" value={person.faculty} />
+            <MetadataItem label="Род войск / направление службы" value={person.department} />
+            <MetadataItem className="sm:col-span-2" label="Период участия" value={person.participationPeriod} />
+            <MetadataItem className="sm:col-span-2" label="Опубликовано" value={formatDate(person.publishedAt)} />
+          </PersonMetaList>
         </header>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(270px,340px)_minmax(0,1fr)] lg:items-start">
