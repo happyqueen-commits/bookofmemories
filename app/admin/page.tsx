@@ -63,7 +63,7 @@ export default async function AdminPage({
 }) {
   const session = await auth();
   if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
-    return <div><h1 className="text-2xl font-semibold">Админ-панель</h1><p className="mt-2">Доступ только для MODERATOR/ADMIN.</p></div>;
+    return <div><h1 className="text-2xl font-semibold">Панель модерации</h1><p className="mt-2">Доступ разрешён только сотрудникам редакции.</p></div>;
   }
 
   const params = (await searchParams) ?? {};

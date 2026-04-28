@@ -24,7 +24,7 @@ export async function deliverSubmissionAccessCode(email: string, code: string, t
   }
 
   if (process.env.NODE_ENV !== "production") {
-    console.info(`[submission-access][internal-qa] email=${email} code=${code} ttlMinutes=${ttlMinutes}`);
+    console.info(`[submission-access] verification code generated for email=${email}, ttlMinutes=${ttlMinutes}`);
     return;
   }
 

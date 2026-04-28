@@ -86,7 +86,7 @@ export default async function EditPersonPage({
         </label>
 
         <label className="block">
-          <span className="font-medium text-slate-800">Ссылка на фотографию (imageUrl)</span>
+          <span className="font-medium text-slate-800">Ссылка на фотографию</span>
           <input name="imageUrl" type="url" defaultValue={person.photoUrl ?? ""} className={inputClass} placeholder="https://..." />
         </label>
 
