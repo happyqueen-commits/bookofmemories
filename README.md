@@ -1,6 +1,6 @@
 # Book of Memories
 
-Production-oriented Next.js 14 + Prisma application for publishing and moderating memorial submissions about university participants.
+Production-oriented Next.js 14 + Prisma application for publishing and moderating memorial submissions about people connected with the SVO.
 
 ## Stack
 
@@ -17,6 +17,7 @@ Production-oriented Next.js 14 + Prisma application for publishing and moderatin
 - Public submission flow for `Person`
 - Submission status access via one-time email code
 - Admin moderation panel `/admin`
+- Admin management of published cards (edit + hide/restore)
 - Password reset flow `/account/forgot-password` → `/account/reset-password`
 - Upload API with mime/extension/signature/size checks
 - Rate limits for login, submit, upload, code send/verify, forgot/reset password
@@ -162,6 +163,12 @@ npm run admin:create -- --email=admin@example.com --password='StrongPass123' --n
 3. Moderator/admin opens `/admin`
 4. Set status: `approved` / `needs_revision` / `rejected`
 5. On `approved`, `Person` record is published and linked to submission
+
+### Published cards management
+
+- `/admin` now includes a dedicated list of participant cards
+- Moderators/admins can open `/admin/persons/[id]/edit` to update card content and publication status
+- Hide action is implemented as soft delete (`Person.deletedAt`), so hidden cards are not shown on public pages
 
 ---
 

@@ -106,6 +106,25 @@ const moderateSchema = z.object({
   moderatorComment: z.string().max(2000).optional().or(z.literal(""))
 });
 
+const updatePersonSchema = z.object({
+  personId: z.string().cuid(),
+  fullName: z.string().trim().min(2, "Укажите ФИО."),
+  biography: z.string().trim().min(10, "Биография должна содержать минимум 10 символов."),
+  shortDescription: z.string().trim().min(3, "Краткое описание должно содержать минимум 3 символа."),
+  birthDate: optionalDate,
+  deathDate: optionalDate,
+  militaryRank: optionalTrimmedString,
+  serviceBranch: optionalTrimmedString,
+  participationPeriod: optionalTrimmedString,
+  imageUrl: optionalUrl,
+  moderationStatus: z.enum(["draft", "pending", "needs_revision", "approved", "rejected"])
+});
+
+const archivePersonSchema = z.object({
+  personId: z.string().cuid(),
+  archive: z.enum(["1", "0"]).default("1")
+});
+
 const SUBMISSION_ACCESS_CODE_TTL_MINUTES = 15;
 const SUBMISSION_ACCESS_CODE_COOLDOWN_SECONDS = 60;
 const SUBMISSION_ACCESS_CODE_MAX_ATTEMPTS = 5;
@@ -697,4 +716,106 @@ export async function moderateSubmissionAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/memory");
   revalidatePath("/");
+}
+
+async function requireContentManager() {
+  const session = await auth();
+  if (!session?.user || (session.user.role !== Role.MODERATOR && session.user.role !== Role.ADMIN)) {
+    throw new Error("Недостаточно прав для управления карточками.");
+  }
+}
+
+export async function updatePublishedPersonAction(formData: FormData) {
+  await requireContentManager();
+
+  const parsed = updatePersonSchema.safeParse({
+    personId: formData.get("personId"),
+    fullName: formData.get("fullName"),
+    biography: formData.get("biography"),
+    shortDescription: formData.get("shortDescription"),
+    birthDate: formData.get("birthDate"),
+    deathDate: formData.get("deathDate"),
+    militaryRank: formData.get("militaryRank"),
+    serviceBranch: formData.get("serviceBranch"),
+    participationPeriod: formData.get("participationPeriod"),
+    imageUrl: formData.get("imageUrl"),
+    moderationStatus: formData.get("moderationStatus")
+  });
+
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const message = issue?.message ?? "Проверьте заполнение формы.";
+    redirect(`/admin/persons/${encodeURIComponent(String(formData.get("personId") ?? ""))}/edit?error=${encodeURIComponent(message)}`);
+  }
+
+  const personId = parsed.data.personId;
+  const existing = await prisma.person.findUnique({ where: { id: personId }, select: { id: true, photoUrls: true } });
+  if (!existing) {
+    throw new Error("Карточка не найдена.");
+  }
+
+  const parsedName = parsePersonName(parsed.data.fullName);
+  await prisma.person.update({
+    where: { id: personId },
+    data: {
+      fullName: parsed.data.fullName,
+      firstName: parsedName.firstName,
+      lastName: parsedName.lastName,
+      middleName: parsedName.middleName,
+      biography: parsed.data.biography,
+      shortDescription: parsed.data.shortDescription,
+      birthDate: parsed.data.birthDate,
+      deathDate: parsed.data.deathDate,
+      faculty: parsed.data.militaryRank,
+      department: parsed.data.serviceBranch,
+      participationPeriod: parsed.data.participationPeriod,
+      photoUrl: parsed.data.imageUrl,
+      photoUrls:
+        parsed.data.imageUrl && !existing.photoUrls.includes(parsed.data.imageUrl)
+          ? [...existing.photoUrls, parsed.data.imageUrl]
+          : existing.photoUrls,
+      moderationStatus: parsed.data.moderationStatus,
+      publishedAt: parsed.data.moderationStatus === ModerationStatus.approved ? new Date() : null,
+      deletedAt: null
+    }
+  });
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/persons/${personId}/edit`);
+  revalidatePath("/memory");
+  revalidatePath("/");
+  redirect("/admin?personUpdated=1");
+}
+
+export async function archivePublishedPersonAction(formData: FormData) {
+  await requireContentManager();
+
+  const parsed = archivePersonSchema.safeParse({
+    personId: formData.get("personId"),
+    archive: formData.get("archive")
+  });
+  if (!parsed.success) {
+    throw new Error("Некорректный запрос на изменение видимости.");
+  }
+
+  const shouldArchive = parsed.data.archive === "1";
+
+  await prisma.person.update({
+    where: { id: parsed.data.personId },
+    data: shouldArchive
+      ? {
+          deletedAt: new Date(),
+          moderationStatus: ModerationStatus.rejected
+        }
+      : {
+          deletedAt: null,
+          moderationStatus: ModerationStatus.approved,
+          publishedAt: new Date()
+        }
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/memory");
+  revalidatePath("/");
+  redirect(`/admin?personArchived=${shouldArchive ? "1" : "0"}`);
 }
