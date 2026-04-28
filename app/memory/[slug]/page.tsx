@@ -41,7 +41,7 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
   const altText = getPersonImageAlt(person.fullName, normalizedPhotos[0]);
 
   return (
-    <article className="mx-auto max-w-5xl break-words">
+    <article className="mx-auto w-full max-w-[1040px] break-words">
       <section className="rounded-2xl border border-[#cfbea0] bg-[#f9f4e9] p-5 shadow-panel md:p-7">
         <header className="border-b border-[#d7c7ab] pb-4 md:pb-5">
           <h1 className="text-3xl font-semibold tracking-tight text-[#362718] md:text-4xl">{person.fullName}</h1>
@@ -55,12 +55,14 @@ export default async function PersonPage({ params }: { params: Promise<{ slug: s
           </PersonMetaList>
         </header>
 
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(270px,340px)_minmax(0,1fr)] lg:items-start">
+        <div className="mt-5 grid gap-6 [grid-template-columns:minmax(0,1fr)] min-[860px]:grid-cols-[minmax(320px,460px)_minmax(280px,1fr)] min-[860px]:items-start">
           <PhotoCarousel photos={normalizedPhotos} alt={altText} />
-          <section className="rounded-xl border border-[#dccdb2] bg-[#fffdf8] p-4 md:p-5">
-            <h2 className="text-base font-semibold tracking-wide text-[#4d3a24]">Описание</h2>
-            <p className="mt-3 whitespace-pre-line leading-relaxed text-[#3f2f21] [overflow-wrap:anywhere]">{person.biography}</p>
-          </section>
+          {person.biography.trim() ? (
+            <section className="rounded-xl border border-[#dccdb2] bg-[#fffdf8] p-4 md:p-5">
+              <h2 className="text-base font-semibold tracking-wide text-[#4d3a24]">Описание</h2>
+              <p className="mt-3 whitespace-pre-line leading-relaxed text-[#3f2f21] [overflow-wrap:anywhere]">{person.biography}</p>
+            </section>
+          ) : null}
         </div>
       </section>
     </article>
