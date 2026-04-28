@@ -161,7 +161,7 @@ const forgotPasswordSchema = z.object({
 
 const resetPasswordSchema = z
   .object({
-    token: z.string().trim().min(1, "Токен сброса не найден."),
+    token: z.string().trim().min(1, "Ссылка для сброса пароля недействительна."),
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Подтвердите пароль.")
   })
@@ -672,12 +672,12 @@ export async function moderateSubmissionAction(formData: FormData) {
     }
 
     if (submission.targetEntityType !== EntityType.Person) {
-      throw new Error("В текущем MVP автопубликация поддерживается только для Person.");
+      throw new Error("Автоматическая публикация поддерживается только для карточек участников.");
     }
 
     const payloadResult = personSchema.safeParse(submission.payloadJson);
     if (!payloadResult.success) {
-      throw new Error("Невалидный payload заявки, публикация невозможна.");
+      throw new Error("Данные заявки заполнены некорректно. Публикация невозможна до исправления.");
     }
 
     const payload = payloadResult.data;

@@ -27,7 +27,7 @@ export async function deliverPasswordResetToken(email: string, rawToken: string)
   }
 
   if (process.env.NODE_ENV !== "production") {
-    console.info(`[password-reset][internal-qa] email=${email} resetUrl=${resetUrl.toString()}`);
+    console.info(`[password-reset] reset request accepted for email=${email}`);
     return;
   }
 
