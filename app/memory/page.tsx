@@ -41,7 +41,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
   });
 
   return (
-    <div className="space-y-7">
+    <div className="mx-auto w-full max-w-[1120px] space-y-7">
       <section className="rounded-xl border border-borderWarm bg-gradient-to-b from-[#f8f1e5] to-[#f3e8d8] p-5 shadow-panel sm:p-6">
         <h1 className="text-3xl font-semibold text-[#3d2d1f]">Участники и истории</h1>
         <p className="mt-2 max-w-3xl text-[#5b4631]">
@@ -57,7 +57,7 @@ export default async function MemoryPage({ searchParams }: { searchParams: { q?:
           <h2 className="subsection-title text-[#4a3422]">Каталог участников</h2>
           <p className="text-sm text-[#78614a]">Найдено: {items.length}</p>
         </div>
-        <div className="grid auto-rows-fr gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5">
           {items.map((item) => (
             <Card
               key={item.id}
