@@ -88,7 +88,10 @@ const personSchema = z.object({
 
 const submitContactSchema = z.object({
   contactName: z.string().trim().min(2, "Укажите имя для обратной связи."),
-  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи.")
+  contactEmail: z.string().trim().email("Укажите корректный email для обратной связи."),
+  termsAccepted: z.preprocess((value) => value === "on" || value === "true" || value === true, z.literal(true, {
+    errorMap: () => ({ message: "Для отправки материала необходимо подтвердить согласие на обработку и возможную публикацию материалов." })
+  }))
 });
 
 const submissionCodeRequestSchema = z.object({
@@ -403,7 +406,8 @@ export async function submitMaterialAction(formData: FormData) {
 
   const contactParsed = submitContactSchema.safeParse({
     contactName: formData.get("contactName"),
-    contactEmail: formData.get("contactEmail")
+    contactEmail: formData.get("contactEmail"),
+    termsAccepted: formData.get("termsAccepted")
   });
 
   const parsed = personSchema.safeParse({
@@ -465,6 +469,7 @@ export async function submitMaterialAction(formData: FormData) {
       authorId: null,
       contactName: contactParsed.data.contactName,
       contactEmail: normalizedEmail,
+      consentAcceptedAt: new Date(),
       payloadJson: {
         ...parsed.data,
         website: undefined

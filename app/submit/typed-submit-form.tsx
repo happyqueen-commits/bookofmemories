@@ -3,6 +3,7 @@
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { submitMaterialAction } from "@/lib/actions";
 
 const baseInputClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
@@ -45,14 +46,14 @@ const defaultDraft: DraftState = {
   photoUrls: ""
 };
 
-function SubmitButton() {
+function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
 
   return (
     <button
       className="inline-flex w-full items-center justify-center rounded-md bg-slate-800 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending}
     >
       {pending ? "Отправляем..." : "Отправить на модерацию"}
@@ -166,6 +167,7 @@ export function TypedSubmitForm() {
   const [imageSize, setImageSize] = useState<LoadedImageSize | null>(null);
   const [frameSize, setFrameSize] = useState<LoadedImageSize | null>(null);
   const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(DRAFT_KEY);
@@ -241,6 +243,8 @@ export function TypedSubmitForm() {
     uploadedPhotoUrl: "Загруженное фото",
     contactName: "Ваше имя",
     contactEmail: "Email для связи"
+    ,
+    termsAccepted: "Согласие на обработку и публикацию"
   };
 
   const getInputClass = (fieldName: string) =>
@@ -662,11 +666,39 @@ export function TypedSubmitForm() {
       <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
         <h2 className="text-lg font-semibold text-slate-900">Отправка заявки</h2>
         <p className="text-sm text-slate-600">
-          После отправки заявка будет передана на модерацию. Мы отправим код подтверждения на указанный email, чтобы вы могли
-          отслеживать статус.
+          После отправки заявка будет передана на модерацию. На указанную почту будет отправлен код для проверки статуса заявки.
         </p>
+        <label className="block rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700">
+          <span className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name="termsAccepted"
+              checked={termsAccepted}
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-800"
+              required
+            />
+            <span>
+              Я подтверждаю, что имею право передать указанные сведения, текстовые материалы и изображения для
+              рассмотрения и возможной публикации в открытом доступе после модерации. Я ознакомлен(а) с{" "}
+              <Link href="/privacy-policy" className="font-medium underline">
+                Политикой конфиденциальности
+              </Link>
+              ,{" "}
+              <Link href="/publication-rules" className="font-medium underline">
+                Правилами публикации материалов
+              </Link>{" "}
+              и даю{" "}
+              <Link href="/personal-data-consent" className="font-medium underline">
+                согласие на обработку персональных данных
+              </Link>
+              .
+            </span>
+          </span>
+        </label>
+        {getFieldErrorText("termsAccepted") ? <p className="text-sm text-red-700">{getFieldErrorText("termsAccepted")}</p> : null}
         {isUploadingPhoto ? <p className="text-sm text-slate-600">Загружаем изображение…</p> : null}
-        <SubmitButton />
+        <SubmitButton disabled={!termsAccepted} />
       </section>
     </form>
   );

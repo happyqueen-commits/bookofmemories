@@ -56,6 +56,17 @@ function formatDate(value: Date | null) {
   return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }).format(value);
 }
 
+function formatDateTime(value: Date | null) {
+  if (!value) return "Согласие не зафиксировано";
+  return `Согласие получено: ${new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(value)}`;
+}
+
 export default async function AdminPage({
   searchParams
 }: {
@@ -128,6 +139,7 @@ export default async function AdminPage({
                 <p>Контакт автора: <strong>{s.contactName}</strong> ({s.contactEmail})</p>
                 {s.author ? <p className="text-xs text-slate-500">Связанная учетная запись: {s.author.name} ({s.author.email})</p> : null}
                 <p className="text-xs text-slate-500">ID заявки: {s.id}</p>
+                <p className="text-xs text-slate-500">{formatDateTime(s.consentAcceptedAt)}</p>
               </div>
 
               <div className="mt-3 grid gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-2">
