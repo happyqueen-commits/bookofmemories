@@ -154,6 +154,7 @@ model Submission {
   moderatorComment String?
   contactName      String
   contactEmail     String
+  consentAcceptedAt DateTime?
   authorId         String?
   moderatorId      String?
   createdAt        DateTime         @default(now())
